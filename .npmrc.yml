@@ -1,0 +1,8 @@
+# compressionLevel is specific to Yarn and does not have a direct equivalent in npm or pnpm
+# You can skip that configuration
+
+# Disable global cache
+global-cache=false
+
+# Node linker configuration (pnpm uses 'node-modules' by default)
+node-linker=node-modules

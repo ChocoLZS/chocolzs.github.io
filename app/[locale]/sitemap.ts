@@ -1,7 +1,8 @@
 import { MetadataRoute } from 'next'
 import { allBlogs, allAuthors } from 'contentlayer/generated'
 import siteMetadata from '@/data/siteMetadata'
-import { fallbackLng, secondLng } from './i18n/locales'
+import { fallbackLng, locales } from './i18n/locales'
+import { localesInfo } from './i18n/settings'
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const siteUrl = siteMetadata.siteUrl
@@ -18,11 +19,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
         alternatepostsUrls.push({ url: alternatepostsUrl, lang: post.language })
       }
 
-      if (post.language !== secondLng) {
-        const alternatepostsUrl = `${siteUrl}/${secondLng}/blog/${post.slug}`
-        alternatepostsUrls.push({ url: alternatepostsUrl, lang: secondLng })
-      }
-
       return [{ url: mainUrl, lastModified: post.lastmod || post.date }, ...alternatepostsUrls]
     })
 
@@ -35,11 +31,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
       alternateauthorsUrls.push({ url: alternateauthorsUrl, lang: author.language })
     }
 
-    if (author.language !== secondLng) {
-      const alternateauthorsUrl = `${siteUrl}/${secondLng}/about/${author.slug}`
-      alternateauthorsUrls.push({ url: alternateauthorsUrl, lang: secondLng })
-    }
-
     return [{ url: mainUrl }, ...alternateauthorsUrls]
   })
 
@@ -47,15 +38,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
     const mainUrl = `${siteUrl}/${fallbackLng}/${route}`.replace(/\/$/, '')
     const alternateUrls: { url: string; lang: string }[] = []
 
-    if (route !== fallbackLng) {
-      const alternateUrl = `${siteUrl}/${fallbackLng}/${route}`.replace(/\/$/, '')
-      alternateUrls.push({ url: alternateUrl, lang: fallbackLng })
-    }
-
-    if (route !== secondLng) {
-      const alternateUrl = `${siteUrl}/${secondLng}/${route}`.replace(/\/$/, '')
-      alternateUrls.push({ url: alternateUrl, lang: secondLng })
-    }
+    localesInfo.forEach(({ locale }) => {
+      if (route !== locale) {
+        const alternateUrl = `${siteUrl}/${locale}/${route}`.replace(/\/$/, '')
+        alternateUrls.push({ url: alternateUrl, lang: locale })
+      }
+    })
 
     return [{ url: mainUrl, lastModified: today }, ...alternateUrls]
   })

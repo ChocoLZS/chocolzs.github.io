@@ -1,14 +1,15 @@
 const fallbackLng = 'zh'
 const secondLng = 'en'
 
-const locales = [
-  {
+const locales = {
+  fallbackLng: {
     name: '中文',
     locale: fallbackLng,
   },
-  {
+  secondLng: {
     name: 'English',
     locale: secondLng,
   },
-]
-module.exports = { fallbackLng, secondLng, locales }
+}
+
+console.log(Object.values(locales))
