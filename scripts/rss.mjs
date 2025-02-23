@@ -3,10 +3,10 @@ import path from 'path'
 import { slug } from 'github-slugger'
 import { escape } from 'pliny/utils/htmlEscaper.js'
 import siteMetadata from '../data/siteMetadata.js'
-import tagData from '../app/[locale]/tag-data.json' assert { type: 'json' }
+import tagData from '../app/[...locale]/tag-data.json' assert { type: 'json' }
 import { allBlogs } from '../.contentlayer/generated/index.mjs'
 import { sortPosts } from 'pliny/utils/contentlayer.js'
-import { locales } from '../app/[locale]/i18n/settings.js'
+import { locales } from '../app/[...locale]/i18n/locales.js'
 
 const defaultLocale = 'en'
 
@@ -65,7 +65,7 @@ async function generateRSS(config, allBlogs, locale, page = 'feed.xml') {
 }
 
 const rss = async () => {
-  for (const locale of locales) {
+  for (const { locale } of locales) {
     await generateRSS(siteMetadata, allBlogs, locale)
   }
   console.log('RSS feeds generated...')

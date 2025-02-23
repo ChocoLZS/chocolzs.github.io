@@ -67,11 +67,7 @@ export default function Footer() {
             <div>{` • `}</div>
             <Link href="/">{maintitle[locale]}</Link>
           </div>
-          <div className="mb-8 text-sm text-gray-500 dark:text-gray-400">
-            <Link href="https://github.com/PxlSyl/tailwind-nextjs-starter-blog-i18n">
-              {t('theme')}
-            </Link>
-          </div>
+          <div className="mb-8 text-sm text-gray-500 dark:text-gray-400">{t('content')}</div>
         </div>
       </footer>
       <ContactModal />

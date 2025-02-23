@@ -5,13 +5,12 @@ import siteMetadata from '@/data/siteMetadata'
 import headerNavLinks from '@/data/headerNavLinks'
 import Logo from '@/data/logo.svg'
 import Link from '../mdxcomponents/Link'
-import AuthorsMenu from './AuthorsMenu'
 import MobileNav from './MobileNav'
 import ThemeSwitch from '../theme/ThemeSwitch'
 import LangSwitch from '../langswitch'
 import SearchButton from '../search/SearchButton'
 import { useTranslation } from 'app/[locale]/i18n/client'
-import type { LocaleTypes } from 'app/[locale]/i18n/settings'
+import { locales, type LocaleTypes } from 'app/[locale]/i18n/settings'
 import { motion } from 'framer-motion'
 
 const Header = () => {
@@ -70,10 +69,9 @@ const Header = () => {
                 </Link>
               )
             })}
-          <AuthorsMenu className="hidden sm:block" />
           <SearchButton />
           <ThemeSwitch />
-          <LangSwitch />
+          {locales.length > 1 && <LangSwitch />}
           <MobileNav />
         </div>
       </div>
