@@ -1,10 +1,10 @@
 /** @type {import("pliny/config").PlinyConfig } */
 const siteMetadata = {
   title: 'Next.js i18n Starter Blog',
-  author: 'Tails Azimuth',
-  headerTitle: 'TailwindBlog',
+  author: 'choco',
+  headerTitle: "Choco's Happy Farm",
   description: 'A blog created with Next.js, i18n and Tailwind.css',
-  language: 'en',
+  language: 'zh',
   theme: 'system', // system, dark or light
   siteUrl: 'https://tailwind-nextjs-starter-blog-i18n.vercel.app',
   siteRepo: 'https://github.com/PxlSyl/tailwind-nextjs-starter-blog-i18n',

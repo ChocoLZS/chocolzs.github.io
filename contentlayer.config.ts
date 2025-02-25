@@ -33,6 +33,8 @@ import { localesInfo as locales } from './app/[locale]/i18n/settings'
 const root = process.cwd()
 const isProduction = process.env.NODE_ENV === 'production'
 
+const DATA_DIR = 'blog'
+
 // heroicon mini link
 const icon = fromHtmlIsomorphic(
   `
@@ -77,13 +79,13 @@ function createTagCount(allBlogs) {
     acc[locale] = {}
     return acc
   }, {})
-
   allBlogs.forEach((file) => {
     if (file.tags && (!isProduction || file.draft !== true)) {
       file.tags.forEach((tag: string) => {
         const formattedTag = slug(tag)
         locales.forEach(({ locale }) => {
-          tagCount[locale][formattedTag] = (tagCount[locale][formattedTag] || 0) + 1
+          if (file.path.includes(`${DATA_DIR}/${locale}`))
+            tagCount[locale][formattedTag] = (tagCount[locale][formattedTag] || 0) + 1
         })
       })
     }
@@ -121,7 +123,7 @@ export const Series = defineNestedType(() => ({
 
 export const Blog = defineDocumentType(() => ({
   name: 'Blog',
-  filePathPattern: 'blog/**/*.mdx',
+  filePathPattern: `${DATA_DIR}/{${locales.map(({ locale }) => locale).join(',')}}/**/*.mdx`,
   contentType: 'mdx',
   fields: {
     title: { type: 'string', required: true },

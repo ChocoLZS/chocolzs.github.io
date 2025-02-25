@@ -1,4 +1,4 @@
-import 'css/tailwind.css'
+import 'assets/css/tailwind.css'
 import 'pliny/search/algolia.css'
 
 import { fallbackLng } from './[locale]/i18n/locales'

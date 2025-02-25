@@ -1,22 +1,24 @@
 ---
 title: O Canada
 date: '2017-07-15'
-language: zh
-tags: ['vacance', 'canada', 'images']
+language: en
+tags: ['holiday', 'canada', 'images']
 authors: ['tailsazimuth']
 draft: false
 layout: PostBanner
 images: ['/static/images/canada/mountains.jpg']
-summary: Les terres pittoresques du Canada avec des feuilles d'érable, des montagnes enneigées, des lacs bleu turquoise et Toronto. Admirez les sites touristiques à travers cette galerie de photos et voyez à quel point c'est facile à reproduire grâce à la magie de MDX et des classes tailwind.
+summary: The scenic lands of Canada featuring maple leaves, snow-capped mountains, turquoise lakes and Toronto. Take in the sights in this photo gallery exhibition and see how easy it is to replicate with some MDX magic and tailwind classes.
 ---
 
-Les terres pittoresques du Canada avec des feuilles d'érable, des montagnes enneigées, des lacs bleu turquoise et Toronto. Admirez les sites touristiques à travers cette galerie de photos et voyez à quel point c'est facile à reproduire grâce à la magie de MDX et des classes tailwind.
+The scenic lands of Canada featuring maple leaves, snow-capped mountains, turquoise lakes and Toronto. Take in the sights in this photo gallery exhibition and see how easy it is to replicate with some MDX magic and tailwind classes.
 
-Présente des images servies grâce au composant « next/image ». Les images stockées localement se trouvent dans un dossier avec le chemin suivant: `/static/images/canada/[filename].jpg`
+Features images served using `next/image` component. The locally stored images are located in a folder with the following path: `/static/images/canada/[filename].jpg`
 
-## Puisque nous utilisons mdx, nous pouvons créer une simple grille flexbox réactive pour afficher nos images avec quelques classes CSS tailwind.
+Since we are using mdx, we can create a simple responsive flexbox grid to display our images with a few tailwind css classes.
 
-# Galerie
+---
+
+# Gallery
 
 <div className="-mx-2 flex flex-wrap overflow-hidden xl:-mx-2">
   <div className="my-1 w-full overflow-hidden px-2 xl:my-1 xl:w-1/2 xl:px-2">
@@ -33,7 +35,7 @@ Présente des images servies grâce au composant « next/image ». Les images st
   </div>
 </div>
 
-# Implémentation
+# Implementation
 
 ```js
 <div className="-mx-2 flex flex-wrap overflow-hidden xl:-mx-2">
@@ -52,31 +54,31 @@ Présente des images servies grâce au composant « next/image ». Les images st
 </div>
 ```
 
-Avec MDX v2, on peut entrelacer markdown dans jsx comme indiqué dans cet exemple de code.
+With MDX v2, one can interleave markdown in jsx as shown in the example code.
 
-### Crédits photo
+### Photo Credits
 
 <div>
-  Photo d'érable par [Guillaume
+  Maple photo by [Guillaume
   Jaillet](https://unsplash.com/@i_am_g?utm_source=unsplash&amp;utm_medium=referral&amp;utm_content=creditCopyText)
-  sur
+  on
   [Unsplash](https://unsplash.com/s/photos/canada?utm_source=unsplash&amp;utm_medium=referral&amp;utm_content=creditCopyText)
 </div>
 <div>
-  Photo de montagnes par [John
+  Mountains photo by [John
   Lee](https://unsplash.com/@john_artifexfilms?utm_source=unsplash&amp;utm_medium=referral&amp;utm_content=creditCopyText)
-  sur
+  on
   [Unsplash](https://unsplash.com/s/photos/canada?utm_source=unsplash&amp;utm_medium=referral&amp;utm_content=creditCopyText)
 </div>
 <div>
-  Photo de lacs par [Tj
+  Lake photo by [Tj
   Holowaychuk](https://unsplash.com/@tjholowaychuk?utm_source=unsplash&amp;utm_medium=referral&amp;utm_content=creditCopyText)
-  sur
+  on
   [Unsplash](https://unsplash.com/s/photos/canada?utm_source=unsplash&amp;utm_medium=referral&amp;utm_content=creditCopyText)
 </div>
 <div>
-  Photo de Toronto par [Matthew
+  Toronto photo by [Matthew
   Henry](https://unsplash.com/@matthewhenry?utm_source=unsplash&amp;utm_medium=referral&amp;utm_content=creditCopyText)
-  sur
+  on
   [Unsplash](https://unsplash.com/s/photos/canada?utm_source=unsplash&amp;utm_medium=referral&amp;utm_content=creditCopyText)
 </div>
