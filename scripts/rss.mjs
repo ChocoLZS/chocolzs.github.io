@@ -6,7 +6,7 @@ import siteMetadata from '../data/siteMetadata.js'
 import tagData from '../app/[...locale]/tag-data.json' assert { type: 'json' }
 import { allBlogs } from '../.contentlayer/generated/index.mjs'
 import { sortPosts } from 'pliny/utils/contentlayer.js'
-import { locales } from '../app/[...locale]/i18n/locales.js'
+import { locales } from '../data/locale.js'
 
 const defaultLocale = 'en'
 

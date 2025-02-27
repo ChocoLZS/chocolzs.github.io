@@ -1,8 +1,7 @@
 import { MetadataRoute } from 'next'
 import { allBlogs, allAuthors } from 'contentlayer/generated'
 import siteMetadata from '@/data/siteMetadata'
-import { fallbackLng, locales } from './i18n/locales'
-import { localesInfo } from './i18n/settings'
+import { localesInfo, fallbackLng } from './i18n/settings'
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const siteUrl = siteMetadata.siteUrl

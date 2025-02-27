@@ -5,8 +5,7 @@ import SocialIcon from '@/components/social-icons'
 import { useState } from 'react'
 import { useParams, usePathname } from 'next/navigation'
 import { useTranslation } from 'app/[locale]/i18n/client'
-import { fallbackLng } from 'app/[locale]/i18n/locales'
-import { LocaleTypes } from 'app/[locale]/i18n/settings'
+import { LocaleTypes, fallbackLng } from 'app/[locale]/i18n/settings'
 
 type ShareProps = { title: string; description?: string; slug: string; className?: string }
 

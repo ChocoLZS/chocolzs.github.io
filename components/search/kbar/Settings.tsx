@@ -3,7 +3,7 @@ import { Sun, Moon, Monitor } from '@/components/theme/icons'
 import { Theme } from '@/components/theme/ThemeContext'
 import LangButton from './LangButton'
 import ThemeButton from './ThemeButton'
-import { locales } from 'app/[locale]/i18n/locales'
+import { localesInfo } from 'app/[locale]/i18n/settings'
 
 interface SettingsProps {
   t: (key: string) => string
@@ -21,7 +21,7 @@ const Settings: React.FC<SettingsProps> = ({ t, handleThemeChange, handleLinkCli
     </div>
     <div className="my-auto mb-20 mt-10 flex max-h-[230px] flex-col space-y-4 overflow-y-auto">
       <div className="ml-4 text-3xl font-semibold text-primary-400">{t('language')}</div>
-      {locales.map(({ locale, name }, i) => (
+      {localesInfo.map(({ locale, name }, i) => (
         <LangButton key={i} handleLinkClick={handleLinkClick} locale={locale} lang={name} />
       ))}
       <div className="ml-4 text-3xl font-semibold text-primary-400">{t('theme')}</div>
