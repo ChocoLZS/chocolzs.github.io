@@ -35,8 +35,6 @@ const isProduction = process.env.NODE_ENV === 'production'
 
 const DATA_DIR = 'blog'
 
-console.log(locales)
-
 // heroicon mini link
 const icon = fromHtmlIsomorphic(
   `

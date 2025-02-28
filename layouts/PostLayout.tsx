@@ -49,7 +49,6 @@ export default async function PostLayout({
   const basePath = path.split('/')[0]
   const { t } = await createTranslation(locale, 'home')
   const tableOfContents: Toc = toc as unknown as Toc
-  console.log(authorDetails)
   return (
     <>
       <ScrollTopAndComment />

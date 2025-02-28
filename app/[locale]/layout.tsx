@@ -31,7 +31,6 @@ export async function generateMetadata({
   params: { locale: LocaleTypes }
 }): Promise<Metadata> {
   const locale = (await params).locale
-  console.log(siteMetadata)
   return {
     metadataBase: new URL(siteMetadata.siteUrl),
     title: {
@@ -93,6 +92,7 @@ export default async function RootLayout({
       suppressHydrationWarning
     >
       {/* todo: replace these icons */}
+      <link rel="icon" href="/static/favicons/favicon.ico" />
       <link rel="apple-touch-icon" sizes="76x76" href="/static/favicons/apple-touch-icon.png" />
       <link rel="icon" type="image/png" sizes="32x32" href="/static/favicons/favicon-32x32.png" />
       <link rel="icon" type="image/png" sizes="16x16" href="/static/favicons/favicon-16x16.png" />
