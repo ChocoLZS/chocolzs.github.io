@@ -69,6 +69,9 @@ jobs:
       - name: Deploy to GitHub Pages
         if: matrix.server == 'gh'
         uses: actions/deploy-pages@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          artifact_name: output-${{ matrix.server }}
 
       - name: Deploy to ZH Server
         if: matrix.server == 'zh'
