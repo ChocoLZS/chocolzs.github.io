@@ -48,11 +48,16 @@ jobs:
 
       # 按环境保存构建产物
       - name: Archive Output
+        if: matrix.server != 'gh'
         uses: actions/upload-artifact@v4
         with:
           name: output-${{ matrix.server }}
-          path: |
-            ./out
+          path: ./out
+      - name: Archive Github Pages Output
+        if: matrix.server == 'gh'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./out
 
   deploy:
     needs: build
@@ -71,7 +76,6 @@ jobs:
         uses: actions/deploy-pages@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          artifact_name: output-${{ matrix.server }}
 
       - name: Deploy to ZH Server
         if: matrix.server == 'zh'
