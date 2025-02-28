@@ -57,7 +57,7 @@ jobs:
     needs: build
     strategy:
       matrix:
-        server: [gh, zh, en]
+        server: [gh]
     runs-on: ubuntu-latest
     steps:
       - name: Download Artifact
