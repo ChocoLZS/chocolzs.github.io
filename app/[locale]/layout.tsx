@@ -31,7 +31,7 @@ export async function generateMetadata({
   params: { locale: LocaleTypes }
 }): Promise<Metadata> {
   const locale = (await params).locale
-
+  console.log(siteMetadata)
   return {
     metadataBase: new URL(siteMetadata.siteUrl),
     title: {

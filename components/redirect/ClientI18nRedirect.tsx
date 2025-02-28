@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { locales } from 'app/[locale]/i18n/settings'
-import { LoadingScreen } from '@/components/server'
 import { fallbackLng } from 'app/[locale]/i18n/settings'
 
 /**

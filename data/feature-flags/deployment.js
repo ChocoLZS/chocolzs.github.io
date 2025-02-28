@@ -3,14 +3,14 @@
  */
 const IS_LANG_ZH_ONLY = process.env.NEXT_PUBLIC_LANG === 'zh'
 /**
- * 部署位置：'home' | 'github' | 'seaside'
+ * 部署位置：'zh' | 'gh' | 'en'
  */
-const IS_DEPLOY_IN_HOME = process.env.NEXT_PUBLIC_DEPLOY_LOC === 'home'
+const IS_DEPLOY_IN_ZH = process.env.NEXT_PUBLIC_DEPLOY_LOC === 'zh'
 /**** 结束 ****/
 
 console.log('IS_LANG_ZH_ONLY', IS_LANG_ZH_ONLY)
 
-module.exports.Deployment = {
+module.exports = {
   IS_LANG_ZH_ONLY,
-  IS_DEPLOY_IN_HOME,
+  IS_DEPLOY_IN_ZH,
 }

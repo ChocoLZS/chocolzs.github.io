@@ -1,2 +1,4 @@
-export { Deployment } from './deployment'
-export { Config } from './config'
+module.exports = {
+  Deployment: require('./deployment'),
+  Config: require('./config'),
+}

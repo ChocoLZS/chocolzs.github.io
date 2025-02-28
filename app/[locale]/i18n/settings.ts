@@ -1,5 +1,5 @@
 import type { InitOptions } from 'i18next'
-import { fallbackLng, locales as rawLocales } from '@/data/locale.js'
+import { fallbackLng, locales as rawLocales } from '@/data/locale'
 
 export const locales = rawLocales.map((locale) => locale.locale)
 export const localesInfo = rawLocales
