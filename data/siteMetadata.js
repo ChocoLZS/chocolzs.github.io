@@ -10,7 +10,7 @@ const siteMetadata = {
   theme: 'system', // system, dark or light
   siteUrl: Config.SITE_URL,
   siteRepo: Config.SITE_REPO,
-  siteLogo: '/static/images/logo.png',
+  siteLogo: '/static/favicons/favicon-32x32.png',
   socialBanner: '/static/images/twitter-card.png',
   email: 'chocoielzs@outlook.com',
   github: 'https://github.com/ChocoLZS',
