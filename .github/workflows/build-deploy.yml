@@ -89,6 +89,7 @@ jobs:
           source: '.'
           target: '/var/www/blog'
           strip_components: 1
+          rm: true
 
       - name: Deploy to EN Server
         if: matrix.server == 'en'
@@ -101,3 +102,4 @@ jobs:
           source: '.'
           target: '/var/www/blog'
           strip_components: 1
+          rm: true
