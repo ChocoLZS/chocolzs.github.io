@@ -66,16 +66,17 @@ jobs:
         server: [gh]
     runs-on: ubuntu-latest
     steps:
-      - name: Download Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: output-${{ matrix.server }}
-
       - name: Deploy to GitHub Pages
         if: matrix.server == 'gh'
         uses: actions/deploy-pages@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download Artifact
+        if: matrix.server != 'gh'
+        uses: actions/download-artifact@v4
+        with:
+          name: output-${{ matrix.server }}
 
       - name: Deploy to ZH Server
         if: matrix.server == 'zh'
