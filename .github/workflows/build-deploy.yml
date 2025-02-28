@@ -15,7 +15,7 @@ jobs:
   build:
     strategy:
       matrix:
-        server: [gh, en]
+        server: [gh, en, zh]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -63,7 +63,7 @@ jobs:
     needs: build
     strategy:
       matrix:
-        server: [gh, en]
+        server: [gh, en, zh]
     runs-on: ubuntu-latest
     steps:
       - name: Deploy to GitHub Pages
@@ -88,7 +88,7 @@ jobs:
           username: ${{ secrets.CI_SERVER_USER }}
           key: ${{ secrets.CI_SSH_KEY }}
           source: './out'
-          target: '/var/www/blog/'
+          target: '/var/www/blog'
           strip_components: 1
 
       - name: Deploy to EN Server
@@ -99,6 +99,6 @@ jobs:
           port: ${{ secrets.EN_SERVER_PORT }}
           username: ${{ secrets.CI_SERVER_USER }}
           key: ${{ secrets.CI_SSH_KEY }}
-          source: './out'
-          target: '/var/www/blog/'
+          source: './out/*'
+          target: '/var/www/blog'
           strip_components: 1
