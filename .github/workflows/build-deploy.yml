@@ -87,7 +87,7 @@ jobs:
           username: ${{ secrets.CI_SERVER_USER }}
           key: ${{ secrets.CI_SSH_KEY }}
           source: '.'
-          target: '/var/www/blog'
+          target: '/var/www/blog/pages'
           strip_components: 1
           rm: true
 
@@ -100,6 +100,6 @@ jobs:
           username: ${{ secrets.CI_SERVER_USER }}
           key: ${{ secrets.CI_SSH_KEY }}
           source: '.'
-          target: '/var/www/blog'
+          target: '/var/www/blog/pages'
           strip_components: 1
           rm: true
