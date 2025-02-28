@@ -4,6 +4,7 @@ import tagData from 'app/[locale]/tag-data.json'
 import { genPageMetadata } from 'app/[locale]/seo'
 import { createTranslation } from '../i18n/server'
 import { LocaleTypes } from '../i18n/settings'
+import { tagTitle } from '@/data/localeMetadata'
 
 interface PageProps {
   params: Promise<{
@@ -15,7 +16,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { locale } = await params
   const { t } = await createTranslation(locale, 'SEO')
   return genPageMetadata({
-    title: 'Tags',
+    title: tagTitle[locale],
     params: { locale },
   })
 }

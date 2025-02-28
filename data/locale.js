@@ -1,4 +1,4 @@
-import { Deployment } from './blog/feature-flags'
+import { Deployment } from './feature-flags'
 
 const lang_zh = {
   name: '中文',
@@ -9,9 +9,16 @@ const lang_en = {
   locale: 'en',
 }
 
+const lang_debug = {
+  name: 'Debug',
+  locale: 'example',
+}
+
 const fallbackLng = lang_zh.locale
 const fallbackLocale = lang_zh
 
 const locales = Deployment.IS_LANG_ZH_ONLY ? [fallbackLocale] : [fallbackLocale, lang_en]
+
+process.env.NODE_ENV === 'development' && locales.push(lang_debug)
 
 export { fallbackLng, locales }

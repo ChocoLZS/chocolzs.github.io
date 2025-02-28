@@ -28,7 +28,7 @@ const Header = () => {
                 <Logo />
               </div>
               {typeof siteMetadata.headerTitle === 'string' ? (
-                <div className="hidden h-6 text-2xl font-semibold sm:block">
+                <div className="hidden h-6 text-xl font-semibold sm:block">
                   {siteMetadata.headerTitle}
                 </div>
               ) : (
@@ -55,9 +55,11 @@ const Header = () => {
                       isSelected
                         ? 'text-heading-500'
                         : 'text-gray-500 hover:text-gray-900 dark:hover:text-gray-100'
-                    } relative rounded-md px-2 py-1 font-medium transition-colors sm:block`}
+                    } relative flex-none rounded-md px-2 py-1 font-medium transition-colors sm:block`}
                   >
-                    <span className="relative z-10">{t(`${link.title.toLowerCase()}`)}</span>
+                    <span className="relative z-10 text-sm">
+                      {t(`${link.title.toLowerCase()}`)}
+                    </span>
                     {isSelected && (
                       <motion.span
                         layoutId="tab"

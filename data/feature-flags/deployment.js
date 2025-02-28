@@ -10,7 +10,7 @@ const IS_DEPLOY_IN_HOME = process.env.NEXT_PUBLIC_DEPLOY_LOC === 'home'
 
 console.log('IS_LANG_ZH_ONLY', IS_LANG_ZH_ONLY)
 
-module.exports = {
+module.exports.Deployment = {
   IS_LANG_ZH_ONLY,
   IS_DEPLOY_IN_HOME,
 }

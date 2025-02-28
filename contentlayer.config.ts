@@ -29,7 +29,6 @@ import rehypePresetMinify from 'rehype-preset-minify'
 import siteMetadata from './data/siteMetadata'
 import { allCoreContent, sortPosts } from 'pliny/utils/contentlayer.js'
 import { localesInfo as locales } from './app/[locale]/i18n/settings'
-import featureFlags from './data/index.js'
 
 const root = process.cwd()
 const isProduction = process.env.NODE_ENV === 'production'

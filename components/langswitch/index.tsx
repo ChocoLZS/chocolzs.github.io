@@ -77,7 +77,7 @@ const LangSwitch = () => {
               leaveTo="opacity-0 scale-95 translate-y-[10px]"
             >
               <MenuItems
-                className="absolute -right-1/2 z-50 mt-2 origin-top-right divide-y divide-gray-100 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none dark:bg-gray-800"
+                className="absolute left-1/2 z-50 mt-2 origin-top-right -translate-x-1/2 divide-y divide-gray-100 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none dark:bg-gray-800"
                 aria-orientation="vertical"
                 onBlur={() => setIsMenuOpen(false)}
               >

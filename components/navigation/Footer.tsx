@@ -3,7 +3,7 @@
 import Link from '../mdxcomponents/Link'
 import siteMetadata from '@/data/siteMetadata'
 import { maintitle } from '@/data/localeMetadata'
-import SocialIcon from '@/components/social-icons'
+import SocialIcon, { SocialIconProps } from '@/components/social-icons'
 
 import { useParams } from 'next/navigation'
 import { LocaleTypes } from 'app/[locale]/i18n/settings'
@@ -11,6 +11,16 @@ import { useTranslation } from 'app/[locale]/i18n/client'
 
 import { useContactModal } from '../formspree/store'
 import { ContactModal } from '../formspree'
+
+const SNS = {
+  github: siteMetadata.github,
+  facebook: siteMetadata.facebook,
+  youtube: siteMetadata.youtube,
+  linkedin: siteMetadata.linkedin,
+  x: siteMetadata.x,
+  instagram: siteMetadata.instagram,
+  threads: siteMetadata.threads,
+}
 
 export default function Footer() {
   const locale = useParams()?.locale as LocaleTypes
@@ -38,27 +48,13 @@ export default function Footer() {
                 </button>
               )}
             </div>
-            <div className="flex items-center">
-              <SocialIcon kind="github" href={siteMetadata.github} size={6} />
-            </div>
-            <div className="flex items-center">
-              <SocialIcon kind="facebook" href={siteMetadata.facebook} size={6} />
-            </div>
-            <div className="flex items-center">
-              <SocialIcon kind="youtube" href={siteMetadata.youtube} size={6} />
-            </div>
-            <div className="flex items-center">
-              <SocialIcon kind="linkedin" href={siteMetadata.linkedin} size={6} />
-            </div>
-            <div className="flex items-center">
-              <SocialIcon kind="x" href={siteMetadata.x} size={6} />
-            </div>
-            <div className="flex items-center">
-              <SocialIcon kind="instagram" href={siteMetadata.instagram} size={6} />
-            </div>
-            <div className="flex items-center">
-              <SocialIcon kind="threads" href={siteMetadata.threads} size={6} />
-            </div>
+            {Object.entries(SNS)
+              .filter(([key, value]) => Boolean(value))
+              .map(([key, value]) => (
+                <div key={key} className="flex items-center">
+                  <SocialIcon kind={key as SocialIconProps['kind']} href={value} size={6} />
+                </div>
+              ))}
           </div>
           <div className="mb-2 flex space-x-2 text-sm text-gray-500 dark:text-gray-400">
             <div>{siteMetadata.author}</div>

@@ -5,6 +5,7 @@ import { allBlogs } from 'contentlayer/generated'
 import { genPageMetadata } from 'app/[locale]/seo'
 import { createTranslation } from '../i18n/server'
 import { LocaleTypes } from '../i18n/settings'
+import { blogTitle } from '@/data/localeMetadata'
 
 interface PageProps {
   params: Promise<{
@@ -15,7 +16,7 @@ interface PageProps {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { locale } = await params
   return genPageMetadata({
-    title: 'Blog',
+    title: blogTitle[locale],
     params: { locale },
   })
 }

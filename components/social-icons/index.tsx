@@ -31,7 +31,7 @@ const components = {
   reddit: Reddit,
 }
 
-type SocialIconProps = {
+export type SocialIconProps = {
   kind: keyof typeof components
   href?: string | undefined
   size?: number
