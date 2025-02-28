@@ -45,13 +45,11 @@ jobs:
 
       # 按环境保存构建产物
       - name: Archive Output
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: output-${{ matrix.server }}
           path: |
             ./out
-            ./.next
-            ./public
 
   deploy:
     needs: build
@@ -61,21 +59,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download Artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: output-${{ matrix.server }}
 
       - name: Deploy to GitHub Pages
         if: matrix.server == 'gh'
-        uses: peaceiris/actions-gh-pages@v3
+        uses: actions/deploy-pages@v4
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./out
+          token: ${{ secrets.GITHUB_TOKEN }}
+          artifact_name: output-${{ matrix.server }}
           force_orphan: true
 
       - name: Deploy to ZH Server
         if: matrix.server == 'zh'
-        uses: appleboy/scp-action@v1
+        uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.ZH_SERVER_HOST }}
           username: ${{ secrets.ZH_SERVER_USER }}
@@ -86,7 +84,7 @@ jobs:
 
       - name: Deploy to EN Server
         if: matrix.server == 'en'
-        uses: appleboy/scp-action@v1
+        uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EN_SERVER_HOST }}
           username: ${{ secrets.EN_SERVER_USER }}
