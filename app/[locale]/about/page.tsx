@@ -44,5 +44,5 @@ export default async function Page({ params }: PageProps) {
   //     <MDXLayoutRenderer code={author.body.code} />
   //   </AuthorLayout>
   // )
-  return <>{locale}</>
+  return <section className="flex h-full items-center justify-center">hello~</section>
 }

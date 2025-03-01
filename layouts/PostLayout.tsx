@@ -45,7 +45,7 @@ export default async function PostLayout({
   children,
   params: { locale },
 }: LayoutProps) {
-  const { filePath, path, slug, date, title, tags, language, series, toc } = content
+  const { filePath, path, slug, date, title, tags, language, series, toc, lastmod } = content
   const basePath = path.split('/')[0]
   const { t } = await createTranslation(locale, 'home')
   const tableOfContents: Toc = toc as unknown as Toc
@@ -57,7 +57,7 @@ export default async function PostLayout({
         <div className="xl:divide-y xl:divide-gray-200 xl:dark:divide-gray-700">
           <header className="pt-6 xl:pb-6">
             <div className="space-y-1 text-center">
-              <dl className="space-y-10">
+              <dl className="space-y-4">
                 <div>
                   <dt className="sr-only">{t('pub')}</dt>
                   <dd className="text-base font-medium leading-6 text-gray-500 dark:text-gray-400">
@@ -66,6 +66,16 @@ export default async function PostLayout({
                     </time>
                   </dd>
                 </div>
+                {lastmod && lastmod !== date && (
+                  <div className="text-sm font-medium leading-6 text-gray-500 dark:text-gray-400">
+                    <dt>{t('lastmod')}</dt>
+                    <dd>
+                      <time dateTime={lastmod}>
+                        {new Date(lastmod).toLocaleDateString(language, postDateTemplate)}
+                      </time>
+                    </dd>
+                  </div>
+                )}
               </dl>
               <div>
                 <PageTitle>{title}</PageTitle>
