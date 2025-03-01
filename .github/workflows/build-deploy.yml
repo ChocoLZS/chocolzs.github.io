@@ -39,7 +39,7 @@ jobs:
 
       # 环境文件切换
       - name: Setup Environment
-        run: cp .env.${{ matrix.server }} .env.production
+        run: cp .env.${{ matrix.server }} .env
 
       - name: Build Project
         run: pnpm build

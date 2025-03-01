@@ -43,7 +43,8 @@ const Share = ({ title, description, slug, className }: ShareProps) => {
       </div>
       <div>
         <ul className={`grid grid-cols-4 gap-4 ${className}`}>
-          <li className="ml-4 inline-block">
+          {/* todo: handle with environment */}
+          {/* <li className="ml-4 inline-block">
             <SocialIcon
               kind="facebook"
               size={5}
@@ -98,7 +99,7 @@ const Share = ({ title, description, slug, className }: ShareProps) => {
               aria-label={t('telegramshare')}
               href={`https://telegram.me/share/url?url=${siteMetadata.siteUrl}/${locale}/${targetSegment}/${slug}&text=${title}`}
             />
-          </li>
+          </li> */}
           <li className="relative ml-4 inline-block">
             <button
               onMouseEnter={() => setShowMenu(true)}
