@@ -1,7 +1,7 @@
 type Project = {
   title: string
   description: string
-  imgSrc: string
+  imgSrc?: string
   href: string
 }
 
@@ -11,14 +11,12 @@ type ProjectsData = {
 
 const projectsData: ProjectsData = {
   en: [
-    // {
-    //   title: 'A Search Engine',
-    //   description: `What if you could look up any information in the world? Webpages, images, videos
-    //     and more. Google has many features to help you find exactly what you're looking
-    //     for.`,
-    //   imgSrc: '/static/images/google.png',
-    //   href: 'https://www.google.com',
-    // },
+    {
+      title: 'Tweet Forwarding Bot',
+      description: `Currently only supports X (Twitter) forwarding, can be forwarded to qq, bilibili, telegram these three platforms. Support local, Docker deployment.`,
+      // imgSrc: '/static/images/google.png',
+      href: 'https://github.com/idol-bbq-utils/idol-bbq-utils/',
+    },
     // {
     //   title: 'The Time Machine',
     //   description: `Imagine being able to travel back in time or to the future. Simple turn the knob
@@ -30,13 +28,12 @@ const projectsData: ProjectsData = {
   ],
 
   zh: [
-    // {
-    //   title: 'Un moteur de recherche',
-    //   description: `Et si vous pouviez rechercher n'importe quelle information dans le monde ? Pages Web, images, vidéos
-    //     et plus. Google propose de nombreuses fonctionnalités pour vous aider à trouver exactement ce que vous cherchez.`,
-    //   imgSrc: '/static/images/google.png',
-    //   href: 'https://www.google.com',
-    // },
+    {
+      title: '推文转发bot',
+      description: `当前只支持X（Twitter）的转发，可转发至qq、bilibili、telegram这三个平台。支持本地、Docker部署。`,
+      // imgSrc: '/static/images/google.png',
+      href: 'https://github.com/idol-bbq-utils/idol-bbq-utils/',
+    },
     // {
     //   title: 'La Machine à remonter le temps',
     //   description: `Imaginez pouvoir voyager dans le temps ou vers le futur. Tournez simplement le bouton
