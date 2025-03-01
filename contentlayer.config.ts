@@ -28,7 +28,7 @@ import rehypePrismPlus from 'rehype-prism-plus'
 import rehypePresetMinify from 'rehype-preset-minify'
 import siteMetadata from './data/siteMetadata'
 import { allCoreContent, sortPosts } from 'pliny/utils/contentlayer.js'
-import { localesInfo as locales } from './app/[locale]/i18n/settings'
+import { fallbackLng, locales } from './data/locale'
 
 const root = process.cwd()
 const isProduction = process.env.NODE_ENV === 'production'
@@ -123,7 +123,7 @@ export const Series = defineNestedType(() => ({
 
 export const Blog = defineDocumentType(() => ({
   name: 'Blog',
-  filePathPattern: `${DATA_DIR}/{${locales.map(({ locale }) => locale).join(',')}}/**/*.mdx`,
+  filePathPattern: `${DATA_DIR}/${locales.length > 1 ? ['{', locales.map(({ locale }) => locale).join(','), '}'].join() : fallbackLng}/**/*.mdx`,
   contentType: 'mdx',
   fields: {
     title: { type: 'string', required: true },
