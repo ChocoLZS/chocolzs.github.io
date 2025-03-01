@@ -1,0 +1,22 @@
+{
+  "greeting": "标题",
+  "description": "你好啊",
+  "more": "查看详情",
+  "all": "浏览全部",
+
+  "featured": "置顶",
+
+  "comment": "加载评论",
+  "pub": "发布于",
+  "authors": "作者",
+  "name": "昵称",
+  "nexta": "下一篇笔记",
+  "preva": "上一篇笔记",
+  "nextp": "下一页",
+  "prevp": "上一页",
+  "back": "返回笔记列表页",
+  "github": "查看笔记源码",
+  "draft": "施工中",
+  "noposts": "没有笔记",
+  "poststagged": "查看笔记标签"
+}

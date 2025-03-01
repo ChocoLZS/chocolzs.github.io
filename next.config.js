@@ -14,7 +14,7 @@ const ContentSecurityPolicy = `
   connect-src * statichunt.com;
   font-src 'self';
   frame-src giscus.app https://www.youtube.com/ https://www.youtube-nocookie.com/
-`;
+`
 
 const securityHeaders = [
   // https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP
@@ -47,7 +47,7 @@ const securityHeaders = [
     key: 'Permissions-Policy',
     value: 'camera=(), microphone=(), geolocation=()',
   },
-];
+]
 
 /**
  * @type {import('next/dist/next-server/server/config').NextConfig}
@@ -55,19 +55,14 @@ const securityHeaders = [
 module.exports = () => {
   const plugins = [withContentlayer, withBundleAnalyzer]
   return plugins.reduce((acc, next) => next(acc), {
+    output: 'export',
+    images: {
+      unoptimized: true,
+    },
     reactStrictMode: true,
     pageExtensions: ['ts', 'tsx', 'js', 'jsx', 'md', 'mdx'],
     eslint: {
       dirs: ['app', 'components', 'layouts', 'scripts'],
-    },
-    images: {
-      remotePatterns: [
-        {
-          protocol: 'https',
-          hostname: 'picsum.photos',
-          pathname: '**',
-        },
-      ],
     },
     async headers() {
       return [

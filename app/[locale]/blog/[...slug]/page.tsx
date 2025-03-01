@@ -1,4 +1,4 @@
-import 'css/prism.css'
+import 'assets/css/prism.css'
 import 'katex/dist/katex.css'
 import { Metadata } from 'next'
 import { components } from '@/components/mdxcomponents'

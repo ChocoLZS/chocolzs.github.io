@@ -28,10 +28,12 @@ import rehypePrismPlus from 'rehype-prism-plus'
 import rehypePresetMinify from 'rehype-preset-minify'
 import siteMetadata from './data/siteMetadata'
 import { allCoreContent, sortPosts } from 'pliny/utils/contentlayer.js'
-import { fallbackLng, secondLng } from './app/[locale]/i18n/locales'
+import { fallbackLng, locales } from './data/locale'
 
 const root = process.cwd()
 const isProduction = process.env.NODE_ENV === 'production'
+
+const DATA_DIR = 'blog'
 
 // heroicon mini link
 const icon = fromHtmlIsomorphic(
@@ -52,7 +54,7 @@ const computedFields: ComputedFields = {
     type: 'string',
     resolve: (doc) => {
       // Split the flattenedPath by '/' and take the last part
-      const pathParts = doc._raw.flattenedPath.split('/');
+      const pathParts = doc._raw.flattenedPath.split('/')
       return pathParts.slice(2).join('/')
     },
   },
@@ -65,7 +67,7 @@ const computedFields: ComputedFields = {
     resolve: (doc) => doc._raw.sourceFilePath,
   },
   toc: { type: 'string', resolve: (doc) => extractTocHeadings(doc.body.raw) },
-};
+}
 
 /**
  * Count the occurrences of all tags across blog posts and write to json file
@@ -73,20 +75,18 @@ const computedFields: ComputedFields = {
  */
 
 function createTagCount(allBlogs) {
-  const tagCount = {
-    [fallbackLng]: {},
-    [secondLng]: {},
-  }
-
+  const tagCount = locales.reduce((acc, { locale }) => {
+    acc[locale] = {}
+    return acc
+  }, {})
   allBlogs.forEach((file) => {
     if (file.tags && (!isProduction || file.draft !== true)) {
       file.tags.forEach((tag: string) => {
         const formattedTag = slug(tag)
-        if (file.language === fallbackLng) {
-          tagCount[fallbackLng][formattedTag] = (tagCount[fallbackLng][formattedTag] || 0) + 1
-        } else if (file.language === secondLng) {
-          tagCount[secondLng][formattedTag] = (tagCount[secondLng][formattedTag] || 0) + 1
-        }
+        locales.forEach(({ locale }) => {
+          if (file.path.includes(`${DATA_DIR}/${locale}`))
+            tagCount[locale][formattedTag] = (tagCount[locale][formattedTag] || 0) + 1
+        })
       })
     }
   })
@@ -123,7 +123,7 @@ export const Series = defineNestedType(() => ({
 
 export const Blog = defineDocumentType(() => ({
   name: 'Blog',
-  filePathPattern: 'blog/**/*.mdx',
+  filePathPattern: `${DATA_DIR}/${locales.length > 1 ? ['{', locales.map(({ locale }) => locale).join(','), '}'].join() : fallbackLng}/**/*.mdx`,
   contentType: 'mdx',
   fields: {
     title: { type: 'string', required: true },
@@ -167,7 +167,7 @@ export const Authors = defineDocumentType(() => ({
   fields: {
     name: { type: 'string', required: true },
     language: { type: 'string', required: true },
-    default: {type: 'boolean'},
+    default: { type: 'boolean' },
     avatar: { type: 'string' },
     occupation: { type: 'string' },
     company: { type: 'string' },

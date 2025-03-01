@@ -5,8 +5,7 @@ import SocialIcon from '@/components/social-icons'
 import { useState } from 'react'
 import { useParams, usePathname } from 'next/navigation'
 import { useTranslation } from 'app/[locale]/i18n/client'
-import { fallbackLng, secondLng } from 'app/[locale]/i18n/locales'
-import { LocaleTypes } from 'app/[locale]/i18n/settings'
+import { LocaleTypes, fallbackLng } from 'app/[locale]/i18n/settings'
 
 type ShareProps = { title: string; description?: string; slug: string; className?: string }
 
@@ -24,15 +23,14 @@ const Share = ({ title, description, slug, className }: ShareProps) => {
   const { t } = useTranslation(locale, 'common')
   const pathname = usePathname()
   const pathSegments = pathname!.split('/')
-
   // Choose the appropriate segment based on the locale
   let targetSegment = pathSegments.length >= 2 ? pathSegments[1] : ''
 
   if (locale === fallbackLng) {
     // If locale is fallbackLng, use the second segment
     targetSegment = pathSegments.length >= 2 ? pathSegments[1] : ''
-  } else if (locale === secondLng) {
-    // If locale is secondLng, use the third segment
+  } else {
+    // If locale is other, use the third segment
     targetSegment = pathSegments.length >= 3 ? pathSegments[2] : ''
   }
 
@@ -45,7 +43,8 @@ const Share = ({ title, description, slug, className }: ShareProps) => {
       </div>
       <div>
         <ul className={`grid grid-cols-4 gap-4 ${className}`}>
-          <li className="ml-4 inline-block">
+          {/* todo: handle with environment */}
+          {/* <li className="ml-4 inline-block">
             <SocialIcon
               kind="facebook"
               size={5}
@@ -100,7 +99,7 @@ const Share = ({ title, description, slug, className }: ShareProps) => {
               aria-label={t('telegramshare')}
               href={`https://telegram.me/share/url?url=${siteMetadata.siteUrl}/${locale}/${targetSegment}/${slug}&text=${title}`}
             />
-          </li>
+          </li> */}
           <li className="relative ml-4 inline-block">
             <button
               onMouseEnter={() => setShowMenu(true)}

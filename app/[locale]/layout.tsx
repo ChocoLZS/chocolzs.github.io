@@ -1,4 +1,4 @@
-import 'css/tailwind.css'
+import 'assets/css/tailwind.css'
 import 'pliny/search/algolia.css'
 
 import { Space_Grotesk } from 'next/font/google'
@@ -31,7 +31,6 @@ export async function generateMetadata({
   params: { locale: LocaleTypes }
 }): Promise<Metadata> {
   const locale = (await params).locale
-
   return {
     metadataBase: new URL(siteMetadata.siteUrl),
     title: {
@@ -92,6 +91,8 @@ export default async function RootLayout({
       className={`${space_grotesk.variable} scroll-smooth`}
       suppressHydrationWarning
     >
+      {/* todo: replace these icons */}
+      <link rel="icon" href="/static/favicons/favicon.ico" />
       <link rel="apple-touch-icon" sizes="76x76" href="/static/favicons/apple-touch-icon.png" />
       <link rel="icon" type="image/png" sizes="32x32" href="/static/favicons/favicon-32x32.png" />
       <link rel="icon" type="image/png" sizes="16x16" href="/static/favicons/favicon-16x16.png" />

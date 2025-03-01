@@ -10,15 +10,16 @@ const Project = () => {
   const projectArray = projectsData[locale]
   return (
     <>
-      {projectArray.map((project) => (
-        <Card
-          key={project.title}
-          title={project.title}
-          description={project.description}
-          imgSrc={project.imgSrc}
-          href={project.href}
-        />
-      ))}
+      {projectArray &&
+        projectArray.map((project) => (
+          <Card
+            key={project.title}
+            title={project.title}
+            description={project.description}
+            imgSrc={project.imgSrc}
+            href={project.href}
+          />
+        ))}
     </>
   )
 }

@@ -99,7 +99,7 @@ const MobileNav = () => {
               </Link>
             </div>
           ))}
-          {siteMetadata.multiauthors && (
+          {/* {siteMetadata.multiauthors && (
             <>
               <button
                 type="button"
@@ -169,7 +169,7 @@ const MobileNav = () => {
                 return null
               })}
             </div>
-          )}
+          )} */}
         </nav>
       </div>
     </>

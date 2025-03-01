@@ -1,27 +1,28 @@
+const { Config } = require('./feature-flags')
+
 /** @type {import("pliny/config").PlinyConfig } */
 const siteMetadata = {
-  title: 'Next.js i18n Starter Blog',
-  author: 'Tails Azimuth',
-  headerTitle: 'TailwindBlog',
-  description: 'A blog created with Next.js, i18n and Tailwind.css',
-  language: 'en',
+  title: "Choco's Happy Farm",
+  author: 'choco',
+  headerTitle: "Choco's Happy Farm",
+  description: 'The slow and relaxing space for choco',
+  language: 'zh',
   theme: 'system', // system, dark or light
-  siteUrl: 'https://tailwind-nextjs-starter-blog-i18n.vercel.app',
-  siteRepo: 'https://github.com/PxlSyl/tailwind-nextjs-starter-blog-i18n',
-  siteLogo: '/static/images/logo.png',
+  siteUrl: Config.SITE_URL,
+  siteRepo: Config.SITE_REPO,
+  siteLogo: '/static/favicons/favicon-32x32.png',
   socialBanner: '/static/images/twitter-card.png',
-  mastodon: 'https://mastodon.social/@mastodonuser',
-  email: 'address@yoursite.com',
-  github: 'https://github.com',
-  x: 'https://twitter.com/x',
+  email: 'chocoielzs@outlook.com',
+  github: 'https://github.com/ChocoLZS',
+  // mastodon: 'https://mastodon.social/@mastodonuser',
+  // x: 'https://twitter.com/x',
   // twitter: 'https://twitter.com/Twitter',
-  facebook: 'https://facebook.com',
-  youtube: 'https://youtube.com',
-  linkedin: 'https://www.linkedin.com',
-  threads: 'https://www.threads.net',
-  instagram: 'https://www.instagram.com',
-  locale: 'en',
-  multiauthors: true,
+  // facebook: 'https://facebook.com',
+  // youtube: 'https://youtube.com',
+  // linkedin: 'https://www.linkedin.com',
+  // threads: 'https://www.threads.net',
+  // instagram: 'https://www.instagram.com',
+  multiauthors: false,
   analytics: {
     // If you want to use an analytics provider you have to add it to the
     // content security policy in the `next.config.js` file.
@@ -40,11 +41,6 @@ const siteMetadata = {
     // googleAnalytics: {
     //   googleAnalyticsId: '', // e.g. G-XXXXXXX
     // },
-  },
-  newsletter: {
-    // supports mailchimp, buttondown, convertkit, klaviyo, revue, emailoctopus
-    // Please add your .env file and modify it according to your selection
-    provider: 'buttondown',
   },
   iscomments: false,
   comments: {
@@ -94,7 +90,7 @@ const siteMetadata = {
   // formspree support :
   //if set to false, simple "mailto"
   // if set to true, get a free account there : https://formspree.io/ and go to read.me doc
-  formspree: true,
+  formspree: false,
   // waline support
   iswaline: false,
   walineServer: '',

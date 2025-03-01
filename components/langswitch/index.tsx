@@ -2,7 +2,7 @@ import { useState, useRef, useCallback, useMemo } from 'react'
 import { usePathname, useParams, useRouter } from 'next/navigation'
 import { useOuterClick } from '../util/useOuterClick'
 import { useTagStore } from '@/components/util/useTagStore'
-import { LocaleTypes, locales } from 'app/[locale]/i18n/settings'
+import { LocaleTypes, locales, localesInfo } from 'app/[locale]/i18n/settings'
 import {
   Menu,
   Transition,
@@ -77,7 +77,7 @@ const LangSwitch = () => {
               leaveTo="opacity-0 scale-95 translate-y-[10px]"
             >
               <MenuItems
-                className="absolute right-0 z-50 mt-2 w-12 origin-top-right divide-y divide-gray-100 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none dark:bg-gray-800"
+                className="absolute left-1/2 z-50 mt-2 origin-top-right -translate-x-1/2 divide-y divide-gray-100 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none dark:bg-gray-800"
                 aria-orientation="vertical"
                 onBlur={() => setIsMenuOpen(false)}
               >
@@ -87,7 +87,7 @@ const LangSwitch = () => {
                     role="none"
                     style={{ listStyle: 'none', margin: 0, padding: 0 }}
                   >
-                    {locales.map((newLocale: string) => (
+                    {localesInfo.map(({ locale: newLocale, name }) => (
                       <Radio key={newLocale} value={newLocale}>
                         <MenuItem>
                           {({ focus }) => (
@@ -101,7 +101,7 @@ const LangSwitch = () => {
                               role="menuitem"
                               style={{ display: 'block', width: '100%', textDecoration: 'none' }}
                             >
-                              {newLocale.charAt(0).toUpperCase() + newLocale.slice(1)}
+                              {name}
                             </button>
                           )}
                         </MenuItem>
