@@ -3,5 +3,7 @@
   "pub": "Published on",
   "lastmod": "Modified on",
   "authors": "Authors",
-  "name": "Name"
+  "name": "Name",
+  "github": "View on GitHub",
+  "back": "Back to the blog"
 }
