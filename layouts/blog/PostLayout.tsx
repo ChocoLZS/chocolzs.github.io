@@ -17,6 +17,9 @@ import Share from '@/components/share'
 import { Toc } from 'pliny/mdx-plugins'
 import Sidetoc from '@/components/sidetoc'
 
+import styles from './style.module.scss'
+import clsx from 'clsx'
+
 const editUrl = (path) => `${siteMetadata.siteRepo}/blob/main/data/${path}`
 const discussUrl = (path) =>
   `https://mobile.twitter.com/search?q=${encodeURIComponent(`${siteMetadata.siteUrl}/${path}`)}`
@@ -45,14 +48,21 @@ export default async function PostLayout({
   children,
   params: { locale },
 }: LayoutProps) {
-  const { filePath, path, slug, date, title, tags, language, series, toc, lastmod } = content
+  const { filePath, path, slug, date, title, tags, language, series, toc, lastmod, draft } = content
   const basePath = path.split('/')[0]
-  const { t } = await createTranslation(locale, 'home')
+  const { t } = await createTranslation(locale, 'blog')
   const tableOfContents: Toc = toc as unknown as Toc
   return (
     <>
       <ScrollTopAndComment />
       <Sidetoc toc={tableOfContents} />
+      {draft && (
+        <div className="sticky top-4 z-[1]">
+          <div className={clsx('flex items-center justify-center', styles.BorderStripes)}>
+            <div className="my-8">{t('draft')}</div>
+          </div>
+        </div>
+      )}
       <article>
         <div className="xl:divide-y xl:divide-gray-200 xl:dark:divide-gray-700">
           <header className="pt-6 xl:pb-6">

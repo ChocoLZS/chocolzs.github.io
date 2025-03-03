@@ -1,0 +1,52 @@
+.WarningStripes {
+  background: repeating-linear-gradient(
+    45deg,
+    /* 45度斜角 */ #ffd700 0 10px,
+    /* 黄色条纹 (0-10px) */ #000 10px 20px /* 黑色条纹 (10px-20px) */
+  );
+  background-size: 28.28px 28.28px; /* 优化斜边衔接 */
+}
+
+.BorderStripes {
+  position: relative;
+  padding: 20px; /* 边框宽度 */
+  box-sizing: border-box;
+  isolation: isolate;
+  &::before {
+    @apply rounded-xl;
+    content: '';
+    position: absolute;
+    inset: 0; /* 填充整个容器 */
+    z-index: -1;
+    background: repeating-linear-gradient(45deg, #ffd700 0 10px, #000 10px 20px);
+    background-size: 28.28px 28.28px;
+
+    /* 裁剪中间区域 */
+    clip-path: inset(0 0 0 0 round 0);
+    mask:
+      linear-gradient(#fff, #fff) content-box,
+      linear-gradient(#fff, #fff);
+    mask-composite: exclude;
+    padding: 20px; /* 与父元素padding一致 */
+    box-sizing: border-box;
+  }
+  &::before {
+    animation: stripe-move 1s linear infinite;
+  }
+
+  @keyframes stripe-move {
+    100% {
+      background-position: 28.28px 0;
+    }
+  }
+
+  &::after {
+    @apply rounded-xl;
+    content: '';
+    position: absolute;
+    inset: 0; /* 填充整个容器 */
+    z-index: -2;
+    background-color: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+  }
+}

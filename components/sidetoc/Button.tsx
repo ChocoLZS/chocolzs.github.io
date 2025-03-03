@@ -1,5 +1,6 @@
 import { ArrowRightIcon } from './icon'
 import useSidebarStore from './store'
+import { TableOfContentsIcon } from 'lucide-react'
 
 const Button = () => {
   const { sidebarOpen, toggleSidebar } = useSidebarStore()
@@ -10,8 +11,8 @@ const Button = () => {
         onClick={toggleSidebar}
         className="rounded-full bg-gray-200 p-2 text-gray-500 opacity-100 transition-colors hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600"
       >
-        <ArrowRightIcon
-          className={`h-5 w-5 transform transition-transform ${sidebarOpen ? 'rotate-180' : ''}`}
+        <TableOfContentsIcon
+          className={`h-5 w-5 transform transition-transform ${sidebarOpen ? '' : ''}`}
         />
       </button>
     </div>

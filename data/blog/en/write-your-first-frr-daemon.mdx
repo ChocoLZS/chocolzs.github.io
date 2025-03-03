@@ -1,0 +1,421 @@
+---
+title: Create your first FRRouting daemon
+series:
+  order: 1
+  title: 'Write FRRouting daemon'
+date: '2025-03-03 19:00:43Z+0800'
+# lastmod: '2025-03-01'
+language: en
+tags: ['FRRouting', 'Computer Network', 'c']
+authors: ['choco']
+draft: false
+summary: Step by step to write your first FRRouting daemon, it took me almost a week to read the source code and write the daemon.
+images: ['/static/images/kaho-big-head.png']
+---
+
+> I don't write much c language myself, and I don't have a thorough understanding of the makefile build system, so I'll try to explain some steps in detail here, hoping to help you.
+
+## Preface
+
+linux distribution used in the demonstration is Ubuntu 22.04, FRRouting version is 10.2.1.
+
+This article assumes that you have read the official installation documentation and have successfully [installed the official 10.2.1 version of FRRouting](https://docs.frrouting.org/projects/dev-guide/en/latest/building-frr-for-ubuntu2204.html#installing-dependencies), and then proceed to the next step.
+
+Due to the fact that I installed and tested FRRouting through docker before, I will demonstrate the final effect in a **docker** way. ([Official alpine docker installation tutorial](https://docs.frrouting.org/projects/dev-guide/en/latest/building-docker.html#building-alpine-image))
+
+## Write daemon
+
+> The purpose of this article is to enable you to write a simple daemon, so I will try to simplify the code as much as possible to make it easier for you to understand.
+
+### Step 1-Prepare for construction
+
+There is no harm in naming your first daemon `helloworld`. Just like dockerd, this `d` stands for `daemon`.
+
+In this tutorial, we actually **did not use the vtysh** function, and the files modified below are briefly introduced as follows:
+
+- `configure.ac`：Used to configure whether to enable some functions, that is, the configuration related to `./configure`.
+- `Makefile.am`：Files used for compilation and construction.
+
+<details>
+<summary>Configure.ac configuration</summary>
+
+```diff:configure.ac showLineNumbers=732
+@@ -733,6 +733,8 @@ AC_ARG_ENABLE([babeld],
+   AS_HELP_STRING([--disable-babeld], [do not build babeld]))
+ AC_ARG_ENABLE([watchfrr],
+   AS_HELP_STRING([--disable-watchfrr], [do not build watchfrr]))
++AC_ARG_ENABLE([helloworld],
++  AS_HELP_STRING([--disable-helloworld], [do not build helloworld]))
+ AC_ARG_ENABLE([isisd],
+   AS_HELP_STRING([--disable-isisd], [do not build isisd]))
+ AC_ARG_ENABLE([pimd],
+```
+
+```diff:configure.ac showLineNumbers=1876
+@@ -1877,6 +1879,11 @@ AS_IF([test "$enable_babeld" != "no"], [
+   AC_DEFINE([HAVE_BABELD], [1], [babeld])
+ ])
+
++## HAVE_HELLOWORLD used for vtysh/vtysh.c
++AS_IF([test "$enable_helloworld" != "no"], [
++  AC_DEFINE([HAVE_HELLOWORLD], [1], [helloworld])
++])
++
+ AS_IF([test "$enable_isisd" != "no"], [
+   AC_DEFINE([HAVE_ISISD], [1], [isisd])
+ ])
+```
+
+```diff:configure.ac showLineNumbers=2801
+@@ -2802,6 +2809,7 @@ AM_CONDITIONAL([OSPFCLIENT], [test "$OSPFCLIENT" = "ospfclient"])
+ AM_CONDITIONAL([RIPNGD], [test "$enable_ripngd" != "no"])
+ AM_CONDITIONAL([BABELD], [test "$enable_babeld" != "no"])
+ AM_CONDITIONAL([OSPF6D], [test "$enable_ospf6d" != "no"])
++AM_CONDITIONAL([HELLOWORLD], [test "$enable_helloworld" != "no"])
+ AM_CONDITIONAL([ISISD], [test "$enable_isisd" != "no"])
+ AM_CONDITIONAL([PIMD], [test "$enable_pimd" != "no"])
+ AM_CONDITIONAL([PIM6D], [test "$enable_pim6d" != "no"])
+```
+
+</details>
+
+<details>
+<summary>Makefile.am configuration</summary>
+
+```diff:Makefile.am showLineNumbers=193
+@@ -194,6 +194,7 @@ include ripngd/subdir.am
+ include ospfd/subdir.am
+ include ospf6d/subdir.am
+ include ospfclient/subdir.am
++include helloworld/subdir.am
+ include isisd/subdir.am
+ include nhrpd/subdir.am
+ include ldpd/subdir.am
+```
+
+```diff:Makefile.am showLineNumbers=272
+@@ -273,6 +274,7 @@ EXTRA_DIST += \
+        eigrpd/Makefile \
+        fpm/Makefile \
+        grpc/Makefile \
++       helloworld/Makefile \
+        isisd/Makefile \
+        ldpd/Makefile \
+        lib/Makefile \
+```
+
+</details>
+
+<details>
+<summary>lib/libfrr.h configuration</summary>
+
+```diff:lib/libfrr.h showLineNumbers=102
+@@ -103,6 +103,9 @@ DECLARE_DLIST(log_args, struct log_arg, itm);
+ #define MGMTD_VTY_PORT 2623
+ /* Registry of daemons' port defaults */
+
++/* your daemon */
++#define HELLOWORLD_VTY_PORT 2624
++
+ enum frr_cli_mode {
+        FRR_CLI_CLASSIC = 0,
+        FRR_CLI_TRANSACTIONAL,
+```
+
+</details>
+
+#### let frr startup know your daemon
+
+after that, you need to let frr startup know your daemon
+
+<details>
+<summary>tools/etc/frr/daemons</summary>
+
+```diff:tools/etc/frr/daemons showLineNumbers=18
+@@ -19,6 +19,7 @@ ospfd=no
+ ospf6d=no
+ ripd=no
+ ripngd=no
++helloworld=yes
+ isisd=no
+ pimd=no
+ pim6d=no
+```
+
+```diff:tools/etc/frr/daemons showLineNumbers=45
+@@ -46,6 +47,7 @@ ospfd_options="  -A 127.0.0.1"
+ ospf6d_options=" -A ::1"
+ ripd_options="   -A 127.0.0.1"
+ ripngd_options=" -A ::1"
++helloworld_options=" -A 127.0.0.1"
+ isisd_options="  -A 127.0.0.1"
+ pimd_options="   -A 127.0.0.1"
+ pim6d_options="  -A ::1"
+```
+
+</details>
+
+<details>
+<summary>tools/frrcommon.sh.in</summary>
+
+```diff:tools/frrcommon.sh.in showLineNumbers=35
+@@ -36,7 +36,7 @@ FRR_DEFAULT_PROFILE="@DFLT_NAME@" # traditional / datacenter
+ # - keep zebra first
+ # - watchfrr does NOT belong in this list
+
+-DAEMONS="zebra mgmtd bgpd ripd ripngd ospfd ospf6d isisd babeld pimd pim6d ldpd nhrpd eigrpd sharpd pbrd staticd bfdd fabricd vrrpd pathd"
++DAEMONS="zebra mgmtd bgpd ripd ripngd ospfd ospf6d helloworld isisd babeld pimd pim6d ldpd nhrpdeigrpd sharpd pbrd staticd bfdd fabricd vrrpd pathd"
+ RELOAD_SCRIPT="$D_PATH/frr-reload.py"
+
+ #
+```
+
+</details>
+
+### Step 2-Write helloworld daemon
+
+First, create a folder `helloworld` in the project directory, and create related files in this folder.
+
+<details>
+<summary><b>1. Prepare to build related files: <u>Makefile</u> <u>subdir.am</u> <u>.gitignore</u></b></summary>
+
+```makefile:helloworld/Makefile
+all: ALWAYS
+       @$(MAKE) -s -C .. helloworld/helloworld
+%: ALWAYS
+       @$(MAKE) -s -C .. helloworld/$@
+
+Makefile:
+       #nothing
+ALWAYS:
+.PHONY: ALWAYS makefiles
+.SUFFIXES:
+```
+
+```makefile:helloworld/subdir.am
+#
+# helloworld
+#
+
+if HELLOWORLD
+sbin_PROGRAMS += helloworld/helloworld
+vtysh_daemons += helloworld
+
+endif
+
+helloworld_helloworld_SOURCES = \
+       helloworld/helloworld_main.c \
+       helloworld/helloworld.c \
+       # end
+
+noinst_HEADERS += \
+       helloworld/helloworld.h \
+       # end
+
+helloworld_helloworld_LDADD = lib/libfrr.la $(LIBCAP)
+```
+
+```.gitignore:helloworld/.gitignore
+helloworld
+```
+
+</details>
+
+<details>
+<summary>2. Start writing daemon related code</summary>
+
+```c:helloworld/helloworld.h
+#ifndef _BGPMGMTD_H
+#define _BGPMGMTD_H
+
+#include "lib/libfrr.h"
+
+#endif /* _BGPMGMTD_H */
+```
+
+```c:helloworld/helloworld.c
+#include "helloworld/helloworld.h"
+```
+
+core code⬇️
+
+```c:helloworld/helloworld_main.c
+#include <zebra.h>
+
+#include <lib/version.h>
+
+#include "helloworld/helloworld.h"
+
+/* Master of threads. */
+struct event_loop *master;
+
+/* handle signal */
+/* signal definitions */
+void sighup(void);
+void sigint(void);
+void sigusr1(void);
+
+/* SIGHUP handler. */
+void sighup(void)
+{
+	zlog_info("SIGHUP received, ignoring");
+
+	return;
+}
+
+/* SIGUSR1 handler. */
+void sigusr1(void)
+{
+	zlog_rotate();
+}
+
+/* SIGINT handler. */
+__attribute__((__noreturn__)) void sigint(void)
+{
+	zlog_notice("Terminating on signal");
+
+  /* execute functions registered in this hook, mostly related to ending the program */
+  /* Signalize shutdown. */
+	frr_early_fini();
+
+  /* execute functions registered in this hook, mostly related to resource recovery */
+  /* Terminate and free() FRR related memory. */
+	frr_fini();
+
+	exit(0);
+}
+
+static struct frr_signal_t helloworld_signals[] = {
+	{
+		.signal = SIGHUP,
+		.handler = &sighup,
+	},
+	{
+		.signal = SIGUSR1,
+		.handler = &sigusr1,
+	},
+	{
+		.signal = SIGINT,
+		.handler = &sigint,
+	},
+	{
+		.signal = SIGTERM,
+		.handler = &sigint,
+	},
+};
+
+/* privileges */
+static zebra_capabilities_t _caps_p[] = {ZCAP_BIND, ZCAP_NET_RAW,
+					 ZCAP_NET_ADMIN, ZCAP_SYS_ADMIN};
+
+struct zebra_privs_t helloworld_privs = {
+#if defined(FRR_USER) && defined(FRR_GROUP)
+	.user = FRR_USER,
+	.group = FRR_GROUP,
+#endif
+#ifdef VTY_GROUP
+	.vty_group = VTY_GROUP,
+#endif
+	.caps_p = _caps_p,
+	.cap_num_p = array_size(_caps_p),
+	.cap_num_i = 0,
+};
+
+static struct frr_daemon_info helloworld_di;
+
+FRR_DAEMON_INFO(helloworld, BGPMGMTD,
+    .vty_port = HELLOWORLD_VTY_PORT,
+    .proghelp = "Implementation of your first helloworld Daemon.",
+
+    .signals = helloworld_signals,
+    .n_signals = array_size(helloworld_signals),
+
+    .privs = &helloworld_privs,
+);
+
+int main(int argc, char **argv)
+{
+    int opt;
+
+    frr_preinit(&helloworld_di, argc, argv);
+
+    /* Process command line options, it is important and cannot be deleted */
+    while (true) {
+		opt = frr_getopt(argc, argv, NULL);
+		if (opt == EOF)
+			break;
+    }
+
+    /* Initialize FRR infrastructure. */
+	master = frr_init();
+
+	frr_config_fork();
+
+  /* not the recommended way to log, you should use zlog instead of fprintf */
+  fprintf(stdout, "helloworld! your first deamon helloworld has started.\n");
+
+  /* Add this daemon to the FRR event loop. */
+	frr_run(master);
+
+	/* Not reached. */
+	return 0;
+}
+```
+
+</details>
+
+## Compile and run
+
+<details>
+<summary>Optional (use make on the host to check for compilation errors)</summary>
+
+according to the official website to install libyang2, execute the following command to prepare the build environment and compile the build, you do not need to install it on the host
+
+```bash
+#/bin/bash
+
+./bootstrap.sh
+./configure \
+    --prefix=/usr \
+    --includedir=\${prefix}/include \
+    --bindir=\${prefix}/bin \
+    --sbindir=\${prefix}/lib/frr \
+    --libdir=\${prefix}/lib/frr \
+    --libexecdir=\${prefix}/lib/frr \
+    --sysconfdir=/etc \
+    --localstatedir=/var \
+    --with-moduledir=\${prefix}/lib/frr/modules \
+    --enable-configfile-mask=0640 \
+    --enable-logfile-mask=0640 \
+    --enable-snmp=agentx \
+    --enable-multipath=64 \
+    --enable-user=frr \
+    --enable-group=frr \
+    --enable-vty-group=frrvty \
+    --with-pkg-git-version \
+    --with-pkg-extra-version=-MyOwnFRRVersion
+make -j$(nproc)
+```
+
+</details>
+
+use docker build
+
+> [Official alpine docker installation tutorial](https://docs.frrouting.org/projects/dev-guide/en/latest/building-docker.html#building-alpine-image)
+
+Before that, make sure you have done this step [(let frr startup know your daemon)](#let-frr-startup-know-your-daemon)
+
+```bash:Build docker image
+docker build -t frr-helloworld -f docker/alpine/Dockerfile .
+```
+
+```bash:Run docker container
+docker run -it --rm --name frr-helloworld \
+        --privileged \
+        -v ./tools/etc/frr/daemons:/etc/frr/daemons \
+        frr-helloworld
+```
+
+**Run effect**
+
+![helloworld!](/static/images/blog/write-your-first-frr-daemon/docker-result.webp)
