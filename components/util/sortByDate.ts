@@ -1,4 +1,4 @@
-export const sortByDate = (posts) => {
+export const sortByDate = <T extends { date: number | string }>(posts: Array<T>): Array<T> => {
   if (!Array.isArray(posts)) {
     console.error('sortByDate: posts is not an array')
     return []

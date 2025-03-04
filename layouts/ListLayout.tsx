@@ -50,10 +50,13 @@ export default function ListLayoutWithTags({ params: { locale }, posts, title }:
   const sortedPosts = sortByDate(posts)
   const selectedTag = useTagStore((state) => state.selectedTag)
   const setSelectedTag = useTagStore((state) => state.setSelectedTag)
+  const { formattedTag } = useTagStore()
 
   const filteredPosts = useMemo(() => {
     if (selectedTag) {
-      return sortedPosts.filter((post) => post.tags.includes(selectedTag))
+      return sortedPosts.filter((post) =>
+        post.tags.map(formattedTag).includes(formattedTag(selectedTag))
+      )
     }
     return sortedPosts
   }, [selectedTag, sortedPosts])
@@ -68,7 +71,7 @@ export default function ListLayoutWithTags({ params: { locale }, posts, title }:
   }
 
   const handleTagClick = (tag: string) => {
-    setSelectedTag(tag === useTagStore.getState().selectedTag ? '' : tag)
+    setSelectedTag(useTagStore.getState().isTagEqual(tag) ? '' : tag)
     setCurrentPage(1)
   }
 
@@ -83,7 +86,7 @@ export default function ListLayoutWithTags({ params: { locale }, posts, title }:
         >
           <h3
             className={`inline px-3 py-2 text-sm font-medium uppercase ${
-              useTagStore.getState().selectedTag === postTag
+              useTagStore.getState().isTagEqual(postTag)
                 ? 'text-primary-500'
                 : 'text-gray-500 hover:text-primary-500 dark:text-gray-300 dark:hover:text-primary-500'
             }`}
@@ -109,7 +112,7 @@ export default function ListLayoutWithTags({ params: { locale }, posts, title }:
             <div className="px-6 py-4">
               <button
                 onClick={() => setSelectedTag('')}
-                className={`${useTagStore.getState().selectedTag === '' ? 'text-heading-500 dark:text-heading-400' : 'text-gray-500 dark:text-gray-400'} font-bold uppercase`}
+                className={`${useTagStore.getState().isTagEqual('') ? 'text-heading-500 dark:text-heading-400' : 'text-gray-500 dark:text-gray-400'} font-bold uppercase`}
               >
                 {t('all')}
               </button>
@@ -147,7 +150,7 @@ export default function ListLayoutWithTags({ params: { locale }, posts, title }:
                                   <button
                                     onClick={() => handleTagClick(t)}
                                     className={`${
-                                      useTagStore.getState().selectedTag === t
+                                      useTagStore.getState().isTagEqual(t)
                                         ? 'text-heading-500 dark:text-heading-400'
                                         : 'text-primary-500 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-500'
                                     } mr-3 text-sm font-medium uppercase`}
