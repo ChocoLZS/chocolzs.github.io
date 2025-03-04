@@ -133,13 +133,14 @@ export const Blog = defineDocumentType(() => ({
     tags: { type: 'list', of: { type: 'string' }, default: [] },
     lastmod: { type: 'date' },
     featured: { type: 'boolean' },
-    draft: { type: 'boolean' },
+    draft: { type: 'boolean' }, // this will take effect in production build
     summary: { type: 'string' },
     images: { type: 'json' },
     authors: { type: 'list', of: { type: 'string' }, required: true },
     layout: { type: 'string' },
     bibliography: { type: 'string' },
     canonicalUrl: { type: 'string' },
+    wip: { type: 'boolean' },
   },
   computedFields: {
     ...computedFields,

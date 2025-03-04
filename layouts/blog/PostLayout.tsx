@@ -48,7 +48,8 @@ export default async function PostLayout({
   children,
   params: { locale },
 }: LayoutProps) {
-  const { filePath, path, slug, date, title, tags, language, series, toc, lastmod, draft } = content
+  const { filePath, path, slug, date, title, tags, language, series, toc, lastmod, wip, draft } =
+    content
   const basePath = path.split('/')[0]
   const { t } = await createTranslation(locale, 'blog')
   const tableOfContents: Toc = toc as unknown as Toc
@@ -56,10 +57,10 @@ export default async function PostLayout({
     <>
       <ScrollTopAndComment />
       <Sidetoc toc={tableOfContents} />
-      {draft && (
+      {(wip || draft) && (
         <div className="sticky top-4 z-[1]">
           <div className={clsx('flex items-center justify-center', styles.BorderStripes)}>
-            <div className="my-8">{t('draft')}</div>
+            <div className="my-8">{t('wip')}</div>
           </div>
         </div>
       )}

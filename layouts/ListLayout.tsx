@@ -14,6 +14,9 @@ import { POSTS_PER_PAGE } from '@/data/postsPerPage'
 import { useTranslation } from 'app/[locale]/i18n/client'
 import { LocaleTypes } from 'app/[locale]/i18n/settings'
 
+import stripeStyle from './blog/style.module.scss'
+import clsx from 'clsx'
+
 interface PaginationProps {
   totalPages: number
   currentPage: number
@@ -120,12 +123,20 @@ export default function ListLayoutWithTags({ params: { locale }, posts, title }:
             </div>
           </div>
           <div>
-            <motion.ul variants={container} initial="hidden" animate="show">
+            <motion.ul variants={container} initial="hidden" animate="show" className="space-y-10">
               {displayPosts.map((post) => {
-                const { slug, date, title, summary, tags, language } = post
+                const { slug, date, title, summary, tags, language, wip } = post
                 if (language === locale) {
                   return (
-                    <motion.li variants={item} key={slug} className="py-5">
+                    <motion.li variants={item} key={slug} className="relative overflow-hidden">
+                      {wip && (
+                        <motion.div
+                          className={clsx(
+                            'absolute right-4 top-4 block h-4 w-24 -translate-y-1/2 translate-x-1/2 rotate-45',
+                            stripeStyle.WarningStripes
+                          )}
+                        ></motion.div>
+                      )}
                       <article className="flex flex-col space-y-2 xl:space-y-0">
                         <dl>
                           <dt className="sr-only">{t('pub')}</dt>
