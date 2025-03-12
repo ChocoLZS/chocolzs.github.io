@@ -3,6 +3,9 @@ import Link from '@/components/mdxcomponents/Link'
 import Tag from '@/components/tag'
 import { formatDate } from 'pliny/utils/formatDate'
 import { LocaleTypes } from 'app/[locale]/i18n/settings'
+import clsx from 'clsx'
+
+import styles from '../blog/style.module.scss'
 
 interface Post {
   slug: string
@@ -12,6 +15,7 @@ interface Post {
   tags: string[]
   language: string
   draft?: boolean
+  wip?: boolean
 }
 
 interface PostListProps {
@@ -26,9 +30,17 @@ const PostList: React.FC<PostListProps> = ({ posts, locale, t, maxDisplay }) => 
     <ul className="divide-y divide-gray-200 dark:divide-gray-700">
       {!posts.length && <li>{t('noposts')}</li>}
       {posts.slice(0, maxDisplay).map((post) => {
-        const { slug, date, title, summary, tags } = post
+        const { slug, date, title, summary, tags, wip, draft } = post
         return (
-          <li key={slug} className="py-12">
+          <li key={slug} className="relative overflow-hidden py-12">
+            {(wip || draft) && (
+              <div
+                className={clsx(
+                  'absolute right-8 top-8 h-4 w-28 origin-center -translate-y-1/2 translate-x-1/2 rotate-45',
+                  styles.WarningStripes
+                )}
+              />
+            )}
             <article>
               <div className="space-y-2 xl:grid xl:grid-cols-4 xl:items-baseline xl:space-y-0">
                 <dl>
