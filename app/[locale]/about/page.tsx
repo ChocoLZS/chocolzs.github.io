@@ -31,18 +31,15 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata 
 
 export default async function Page({ params }: PageProps) {
   const { locale } = await params
-  // const authorSlug = decodeURI(authors.join('/'))
-  // const author = allAuthors.find((a) => a.slug === authorSlug && a.language === locale) as Authors
-  // const authorIndex = allAuthors.findIndex((p) => p.slug === authorSlug)
-  // if (authorIndex === -1) {
-  //   return notFound()
-  // }
-  // const mainContent = coreContent(author)
+  const author = allAuthors.find((a) => a.slug === 'default' && a.language === locale) as Authors
+  if (!author) {
+    return notFound()
+  }
+  const mainContent = coreContent(author)
 
-  // return (
-  //   <AuthorLayout params={{ locale }} content={mainContent}>
-  //     <MDXLayoutRenderer code={author.body.code} />
-  //   </AuthorLayout>
-  // )
-  return <section className="flex h-full items-center justify-center">hello~</section>
+  return (
+    <AuthorLayout params={{ locale }} content={mainContent}>
+      <MDXLayoutRenderer code={author.body.code} />
+    </AuthorLayout>
+  )
 }
