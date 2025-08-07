@@ -24,10 +24,13 @@ export default function WalineComments() {
         reaction: [],
         serverURL: siteMetadata.walineServer,
         emoji: [
-          'https://cdn.jsdelivr.net/gh/walinejs/emojis@1.0.0/weibo',
-          'https://cdn.jsdelivr.net/gh/walinejs/emojis@1.0.0/alus',
+          'https://unpkg.com/@waline/emojis@1.2.0/bilibili',
+          'https://unpkg.com/@waline/emojis@1.2.0/tieba',
+          'https://unpkg.com/@waline/emojis@1.2.0/qq',
+          'https://unpkg.com/@waline/emojis@1.2.0/alus'
         ],
-        requiredMeta: ['nick'],
+        pageview: true,
+        comment: true
       })
     }
 
