@@ -15,6 +15,7 @@ import Share from '@/components/share'
 import { LocaleTypes } from 'app/[locale]/i18n/settings'
 import { Toc } from 'pliny/mdx-plugins'
 import Sidetoc from '@/components/sidetoc'
+import { IS_DEPLOY_IN_ZH } from '@/data/feature-flags/deployment'
 
 interface PostBannerProps {
   content: CoreContent<Blog>
@@ -62,12 +63,12 @@ export default function PostMinimal({
             )}
             <div className="prose max-w-none py-4 dark:prose-invert">{children}</div>
             <Share title={title} slug={slug} />
-            <div className="pb-6 pt-6 text-center text-gray-700 dark:text-gray-300" id="comment">
+            {!IS_DEPLOY_IN_ZH && <div className="pb-6 pt-6 text-center text-gray-700 dark:text-gray-300" id="comment">
               {siteMetadata.iswaline === true && <WalineComments />}
               {siteMetadata.comments && siteMetadata.iscomments === true && (
                 <Comments slug={slug} />
               )}
-            </div>
+            </div>}
             <footer>
               <div className="flex flex-col text-sm font-medium sm:flex-row sm:justify-between sm:text-base">
                 {prev && prev.slug && (
