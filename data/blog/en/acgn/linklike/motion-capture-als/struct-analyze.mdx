@@ -1,0 +1,673 @@
+---
+title: Als (Live/Replay) Motion Capture Data Transmission Structure Analysis
+series:
+  order: 2
+  title: 'Link！Like！-Motion Capture Data-als'
+date: '2025-08-07'
+lastmod: '2025-08-07'
+language: en
+tags: ['reverse-engineering', 'linkura', 'Link!Like!', 'lovelive', 'protobuf', 'mobile-game', '2d', 'ACGN', 'ai-translated']
+authors: ['choco']
+draft: false
+wip: false
+summary: This article primarily summarizes the structure of Linkura's live streaming/replay motion capture data transmission.
+---
+
+## TL;DR
+
+Uses **protobuf** for data serialization.
+
+This article only analyzes data received from the server; client-sent data is not analyzed here.
+
+This article uses tools written by the author for analysis `TODO address`. It's essentially a summary of the packet structure rather than a reverse engineering replay.
+
+Summary [click here 🫲](#summary)
+
+## Foreword
+
+As everyone knows (), Linkura used new motion capture replay technology in the live stream on May 29, 2025. Compared to the previous use of [monobitinc](https://www.monobitengine.com/mrs/)'s MRS technology, the live streaming has become relatively more stable and smooth.
+
+Through actual Wireshark packet capture testing, the experience is that more small packets are combined into large packets for TCP transmission, reducing the number of lost small packets (because if packets are lost, they directly lose large packets (laugh)).
+
+Regarding the replay file format stored on CDN:
+
+- Provides .md files (initially thought to be markdown, but while writing this article, I believe it's metadata) as initial metadata description files.
+
+- Borrows from streaming media-related HLS technology, using **m3u8** for segmentation, with each segment being a .ts file, but it's not **MPEG-TS** and has no relation to it.
+
+It's estimated that Als company borrowed this HLS design, on one hand to leverage CDN-related infrastructure, and on the other hand possibly to be compatible with existing video stream replay solutions.
+
+## Protobuf
+
+The specific packet types can also be found in Alstromeria.dll Alst.Protocol's
+`DataPack` and `DataFrame`
+
+```protobuf datapack.proto
+package als;
+
+message DataPack
+{
+	oneof control
+{
+	bool data = 2;
+	bool pong = 10; // Used by live streaming
+	int64 segment_started_at = 14;
+	bool cache_ended = 15;
+}
+	repeated .als.DataFrame frames = 16;
+}
+
+message DataFrame
+{
+	oneof message
+{
+	.als.InstantiateObject instantiate_object = 128;
+	.als.UpdateObject update_object = 129;
+	.als.Room room = 143;
+	.als.AuthorizeResponse authorize_response = 144;    // Live streaming
+	.als.JoinRoomResponse join_room_response = 147;     // Live streaming
+}
+}
+
+```
+
+## Replay Data
+
+Since replay data is relatively easier to obtain, let's first introduce the structure of replay data.
+
+Using the July 31, 2025 episode where Kosaka gave names to fan-submitted items as an example.
+
+### Packet Format
+
+```c
+struct Packet {
+  uint16_t length;                  // Big endian, packet length: live_mark + microseconds + protobuf_data
+  uint8_t live_mark;                // 0 represents live streaming, 1 represents replay, always 0x01 for replay
+  uint64_t microseconds;            // Big endian, microsecond timestamp
+  uint8_t protobuf_data[];          // Length is length - 1 - 8
+}
+```
+
+### Data Introduction
+
+#### `811c9dc5b61ac_segment00000.ts` Segment Structure Analysis
+
+##### Packet Summary
+
+```
+================== STATISTICS ==================
+Total packets analyzed: 596
+Packets with control messages: 596 (100.0%)
+Packets with frames: 594 (99.7%)
+Total frames: 2712
+
+Control Message Types:
+  Data: 594 (99.7%)
+  SegmentStartedAt: 1 (0.2%)
+  CacheEnded: 1 (0.2%)
+  Total Control Messages: 596
+
+Frame Message Types:
+  Object Messages:
+    InstantiateObject: 55 (2.0%)
+    UpdateObject: 2655 (97.9%)
+  Room: 2 (0.1%)
+  Total Frame Messages: 2712
+================================================
+```
+
+The initial 00 ts segment consists of the following structure:
+
+1. SegmentStartedAt
+2. Data-Room
+3. CacheEnded
+4. Data-Frames(InstantiateObject|UpdateObject)
+5. Multiple Data-Frames(UpdateObject)
+
+##### SegmentStartedAt
+
+```
+=== Packet #1: 18 bytes ===
+  Format: Standard protobuf format (int16 length + int8 unused + int64 timestamp + protobuf data)
+  Timestamp: 2025-07-31 11:20:00.753128 UTC (1753960800753128)
+  Raw data length: 9 bytes
+  Raw data (first 9 bytes): 70 e8 ab ea 93 fd e6 8e 03
+  Protobuf Fields:
+    Field #14: Varint (wire type: 0, 9 bytes)
+      Raw bytes: 70 e8 ab ea 93 fd e6 8e 03
+  Control message:
+    Type: SegmentStartedAt, Timestamp: 1753960800753128
+  No frames
+```
+
+Microsecond-level timestamp when segment rendering starts. Comparing segments 01, 02, 03, 04, 05 horizontally, we can see the segment duration is 10 seconds, consistent with the m3u8 description (#EXTINF:10.000).
+
+| No. | Time |
+|---|----|
+| 00 | 2025-07-31 11:20:00.753128 UTC (1753960800753128) |
+| 01 | 2025-07-31 11:20:10.753128 UTC (1753960810753128) |
+| 02 | 2025-07-31 11:20:20.753128 UTC (1753960820753128) |
+| 03 | 2025-07-31 11:20:30.753128 UTC (1753960830753128) |
+| 04 | 2025-07-31 11:20:40.753128 UTC (1753960840753128) |
+
+##### Data-Room
+
+```
+=== Packet #2: 72 bytes ===
+  Format: Standard protobuf format (int16 length + int8 unused + int64 timestamp + protobuf data)
+  Timestamp: 2025-07-31 11:20:40.765541 UTC (1753960840765541)
+  Raw data length: 63 bytes
+  Raw data (first 32 bytes): 82 01 3a fa 08 37 0a 2c 64 65 66 61 75 6c 74 2d 32 35 64 31 65 65 35 66 2d 62 36 36 35 2d 34 61
+  Protobuf Fields:
+    Field #16: Length-delimited (wire type: 2, 61 bytes)
+      Raw bytes: 82 01 3a fa 08 37 0a 2c 64 65 66 61 75 6c 74 2d 32 35 64 31 65 65 35 66 2d 62 36 36 35 2d 34 61 39 63 2d 38 33 63 32 2d 38 34 66 30 32 39 37 62 31 35 34 62 10 f5 af aa a1 fc e5 8e 03
+    Field #2: Varint (wire type: 0, 2 bytes)
+      Raw bytes: 10 01
+  Control message:
+    Type: Data, Value: true
+  Frames (1):
+    Frame #1: 
+      Message: Room (id: "default-25d1ee5f-b665-4a9c-83c2-84f0297b154b", started: 1753926200891381, ended: 0)
+```
+
+The started time is 2025-07-31T01:43:20.891Z. Currently, no source has been found for this, and `get_archive_list` cannot retrieve related information.
+
+##### CacheEnded
+
+```
+=== Packet #3: 11 bytes ===
+  Format: Standard protobuf format (int16 length + int8 unused + int64 timestamp + protobuf data)
+  Timestamp: 2025-07-31 11:20:00.753128 UTC (1753960800753128)
+  Raw data length: 2 bytes
+  Raw data (first 2 bytes): 78 01
+  Protobuf Fields:
+    Field #15: Varint (wire type: 0, 2 bytes)
+      Raw bytes: 78 01
+  Control message:
+    Type: CacheEnded, Value: true
+  No frames
+```
+
+##### Data-Frames(InstantiateObject|UpdateObject)
+
+```
+=== Packet #4: 11780 bytes ===
+  Format: Standard protobuf format (int16 length + int8 unused + int64 timestamp + protobuf data)
+  Timestamp: 2025-07-31 11:20:00.753128 UTC (1753960800753128)
+  Raw data length: 11771 bytes
+  Raw data (first 32 bytes): 82 01 3a fa 08 37 0a 2c 64 65 66 61 75 6c 74 2d 32 35 64 31 65 65 35 66 2d 62 36 36 35 2d 34 61
+  Protobuf Fields:
+  ...
+  Control message:
+    Type: Data, Value: true
+  Frames (95):
+    Frame #1: 
+      Message: Room (id: "default-25d1ee5f-b665-4a9c-83c2-84f0297b154b", started: 1753926200891381, ended: 0)
+    InstantiateObject... Owner ID: "sys" Target: RoomAll (room_id: "default-25d1ee5f-b665-4a9c-83c2-84f0297b154b")
+    UpdateObject... Target: RoomAll (room_id: "default-25d1ee5f-b665-4a9c-83c2-84f0297b154b")
+```
+
+Owner ID: "sys"
+Target: RoomAll (room_id: "default-25d1ee5f-b665-4a9c-83c2-84f0297b154b")
+
+##### Multiple Data-Frames(UpdateObject)
+
+```
+=== Packet #5: 1958 bytes ===
+  Format: Standard protobuf format (int16 length + int8 unused + int64 timestamp + protobuf data)
+  Timestamp: 2025-07-31 11:20:00.759993 UTC (1753960800759993)
+  Raw data length: 1949 bytes
+  Raw data (first 32 bytes): 82 01 5d 8a 08 5a 40 b3 c1 83 f1 02 48 01 52 20 00 00 00 00 00 00 00 00 dd bd f4 3e e2 d9 ad 3c
+  Protobuf Fields:
+  ...
+  Control message:
+    Type: Data, Value: true
+  Frames (4):
+    UpdateObject... Target: RoomAll (room_id: "default-25d1ee5f-b665-4a9c-83c2-84f0297b154b")
+```
+
+#### 01 Segment Structure Analysis
+
+```
+================== STATISTICS ==================
+Total packets analyzed: 591
+Packets with control messages: 590 (99.8%)
+Packets with frames: 589 (99.7%)
+Total frames: 2705
+
+Control Message Types:
+  Data: 588 (99.7%)
+  SegmentStartedAt: 1 (0.2%)
+  CacheEnded: 1 (0.2%)
+  Total Control Messages: 590
+
+Frame Message Types:
+  Object Messages:
+    InstantiateObject: 55 (2.0%)
+    UpdateObject: 2649 (97.9%)
+  Room: 1 (0.0%)
+  Total Frame Messages: 2705
+================================================
+```
+
+Differences from segment 00:
+
+1. SegmentStartedAt 👈 10 seconds later compared to 00
+2. Data-Room same as segment 00
+3. Data-Frames(InstantiateObject|UpdateObject) 👈 Target: CurrentPlayer, missing one Room
+4. CacheEnded 👈 remains consistent
+5. Multiple Data-Frames(UpdateObject) no change
+
+**116 Segment Statistics**
+
+```
+================== STATISTICS ==================
+Total packets analyzed: 540
+Packets with control messages: 539 (99.8%)
+Packets with frames: 538 (99.6%)
+Total frames: 2725
+
+Control Message Types:
+  Data: 537 (99.6%)
+  SegmentStartedAt: 1 (0.2%)
+  CacheEnded: 1 (0.2%)
+  Total Control Messages: 539
+
+Frame Message Types:
+  Object Messages:
+    InstantiateObject: 55 (2.0%)
+    UpdateObject: 2669 (97.9%)
+  Room: 1 (0.0%)
+  Total Frame Messages: 2725
+================================================
+```
+
+**233 Segment Statistics**
+
+```
+================== STATISTICS ==================
+Total packets analyzed: 590
+Packets with control messages: 589 (99.8%)
+Packets with frames: 588 (99.7%)
+Total frames: 2688
+
+Control Message Types:
+  Data: 587 (99.7%)
+  SegmentStartedAt: 1 (0.2%)
+  CacheEnded: 1 (0.2%)
+  Total Control Messages: 589
+
+Frame Message Types:
+  Object Messages:
+    InstantiateObject: 55 (2.0%)
+    UpdateObject: 2632 (97.9%)
+  Room: 1 (0.0%)
+  Total Frame Messages: 2688
+================================================
+```
+
+Same structure as segment 01.
+
+#### Segment Summary
+
+Segments can generally be divided into two types:
+1. Initial initialization segment
+2. Subsequent data segments
+
+During packet capture testing, the player's actual segment fetching behavior is:
+
+Fetch segments 00, 01, 03, then search for the target segment based on offset according to `本編開始 "play_time_second": seconds`.
+
+## Live Streaming Data
+
+Live streaming data was obtained through [tools written by the author]().
+
+Using the same example from July 31, 2025, where Kosaka gave names to fan-submitted items.
+
+### Packet Format
+
+```c
+struct Packet {
+  uint16_t length;                  // Big endian, packet length: live_mark + protobuf_data
+  uint8_t live_mark;                // 0 represents live streaming, 1 represents replay, always 0x00 for live streaming
+  uint8_t protobuf_data[];          // Length is length - 1
+}
+```
+
+As we can see, the data doesn't carry timestamps, so the tool added a timestamp:
+
+```c
+struct TimestampPacket {
+  uint8_t length;
+  uint64_t microseconds;
+}
+```
+
+The binary saved by the tool consists of multiple Packet + TimestampPacket.
+
+### Data Introduction
+
+#### Initial Segment Structure Analysis
+
+##### Packet Summary
+
+```
+================== STATISTICS ==================
+Total packets analyzed: 450
+Packets with control messages: 450 (100.0%)
+Packets with frames: 445 (98.9%)
+Total frames: 2049
+
+Control Message Types:
+  Data: 445 (98.9%)
+  Pong: 5 (1.1%)
+  Total Control Messages: 450
+
+Frame Message Types:
+  Response Messages:
+    AuthorizeResponse: 1 (0.0%)
+    JoinRoomResponse: 1 (0.0%)
+  Object Messages:
+    InstantiateObject: 55 (2.7%)
+    UpdateObject: 1991 (97.2%)
+  Room: 1 (0.0%)
+  Total Frame Messages: 2049
+================================================
+```
+
+The handshake segment consists of the following structure:
+
+1. AuthorizeResponse
+2. Data-Room
+3. JoinRoomResponse
+4. Data-Frames(InstantiateObject|UpdateObject)
+5. Multiple Data-Frames(UpdateObject)
+6. Multiple Pong packets
+
+##### AuthorizeResponse
+
+Not important for conversion, just normal handshake process.
+
+##### Data-Room
+
+```
+=== Packet #3: 64 bytes ===
+  Format: Mixed protobuf format (int16 length 64 + int8 unused 0x00 + protobuf data)
+  Raw data length: 63 bytes
+  Raw data (first 32 bytes): 82 01 3a fa 08 37 0a 2c 64 65 66 61 75 6c 74 2d 32 35 64 31 65 65 35 66 2d 62 36 36 35 2d 34 61
+  Protobuf Fields:
+    Field #16: Length-delimited (wire type: 2, 61 bytes)
+      Raw bytes: 82 01 3a fa 08 37 0a 2c 64 65 66 61 75 6c 74 2d 32 35 64 31 65 65 35 66 2d 62 36 36 35 2d 34 61 39 63 2d 38 33 63 32 2d 38 34 66 30 32 39 37 62 31 35 34 62 10 f5 af aa a1 fc e5 8e 03
+    Field #2: Varint (wire type: 0, 2 bytes)
+      Raw bytes: 10 01
+  Control message:
+    Type: Data, Value: true
+  Frames (1):
+    Frame #1: 
+      Message: Room (id: "default-25d1ee5f-b665-4a9c-83c2-84f0297b154b", started: 1753926200891381, ended: 0)
+```
+
+✅ Same as replay
+
+##### JoinRoomResponse
+
+Not important, just normal handshake process.
+
+##### Data-Frames(InstantiateObject|UpdateObject)
+
+```
+=== Packet #7: 7997 bytes ===
+  Format: Mixed protobuf format (int16 length 7997 + int8 unused 0x00 + protobuf data)
+  Raw data length: 7996 bytes
+  Raw data (first 32 bytes): 82 01 44 82 08 41 40 9c 82 a2 c3 04 4a 0c 61 75 64 69 65 6e 63 65 2d 70 6f 64 52 1e e9 ff ff ff
+  Protobuf Fields:
+  ...
+  Control message:
+    Type: Data, Value: true
+  Frames (94):
+    InstantiateObject... Owner ID: "audience-pod" Target: RoomAll (room_id: "")
+    UpdateObject... Target: RoomAll (room_id: "")
+```
+
+InstantiateObject ID and count are consistent with replay. The difference is in Owner ID and Target Room ID.
+UpdateObject Target Room ID is empty.
+
+##### Multiple Data-Frames(UpdateObject)
+
+```
+=== Packet #13: 1816 bytes ===
+  Format: Mixed protobuf format (int16 length 1816 + int8 unused 0x00 + protobuf data)
+  Raw data length: 1815 bytes
+  Raw data (first 32 bytes): 82 01 2f 8a 08 2c 40 b3 c1 83 f1 02 48 01 52 20 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  Protobuf Fields:
+  ...
+  Control message:
+    Type: Data, Value: true
+  Frames (4):
+    UpdateObject... Target: RoomAll (room_id: "")
+```
+
+##### Multiple Pong Packets
+
+Not important for replay, used for heartbeat detection in live streaming.
+
+#### Subsequent Segment Analysis
+
+```
+================== STATISTICS ==================
+Total packets analyzed: 450
+Packets with control messages: 450 (100.0%)
+Packets with frames: 445 (98.9%)
+Total frames: 1974
+
+Control Message Types:
+  Data: 445 (98.9%)
+  Pong: 5 (1.1%)
+  Total Control Messages: 450
+
+Frame Message Types:
+  Object Messages:
+    UpdateObject: 1974 (100.0%)
+  Total Frame Messages: 1974
+================================================
+```
+
+Theoretically, current live streaming has no concept of subsequent segments, cannot trace back + drag progress bar.
+Only UpdateObject and Pong packets.
+
+Final segment:
+```
+================== STATISTICS ==================
+Total packets analyzed: 308
+Packets with control messages: 308 (100.0%)
+Packets with frames: 193 (62.7%)
+Total frames: 594
+
+Control Message Types:
+  Data: 193 (62.7%)
+  Pong: 115 (37.3%)
+  Total Control Messages: 308
+
+Frame Message Types:
+  Object Messages:
+    UpdateObject: 576 (97.0%)
+    DestroyObject: 18 (3.0%)
+  Total Frame Messages: 594
+================================================
+```
+
+Contains DestroyObject commands. Looking at packets before and after, they're mostly Pong packets.
+
+This can be inferred as finalize-related operations after server shutdown.
+
+## Summary
+
+By comparing the packet structures of live streaming and replay data, we can find the following similarities and differences:
+
+<table className="[&_tbody_tr_td]:px-2 [&_tbody_tr_th]:px-2 [&_tbody_tr]:border-b [&_tbody_*]:align-middle">
+<caption>Summary Table</caption>
+<tbody>
+<tr>
+  <th width="75">Item</th>
+  <th width="150">Live Streaming Data</th>
+  <th width="150">Replay Data</th>
+  <th>Similarities</th>
+  <th>Differences</th>
+</tr>
+{/* Packet Structure */}
+<tr>
+  <td rowSpan={3}>Packet Structure</td>
+  <td colSpan={2} className='text-center'>uint16_t length <br/> uint8_t live_mark</td>
+  <td >length: 2 bytes, big endian <br/> mark: 1 byte identifier</td>
+  <td >live_mark：<br />Live streaming: 0x00, Replay: 0x01</td>
+</tr>
+<tr>
+  <td></td>
+  <td>**uint64_t timestamp**</td>
+  <td></td>
+  <td>Replay carries microsecond timestamp</td>
+</tr>
+<tr>
+  <td colSpan={2} className='text-center'>protobuf</td>
+</tr>
+{/* Packet Structure End */}
+{/* Initial Segment */}
+<tr>
+  <td rowSpan={8}>Initial Segment protobuf</td>
+  <td>AuthorizeResponse</td>
+  <td>SegmentStartedAt</td>
+</tr>
+<tr>
+  <td colSpan={2} className='text-center'>Data-Room</td>
+  <td> Room: live id, started, ended same </td>
+</tr>
+<tr>
+  <td>JoinRoomResponse</td>
+  <td>CacheEnded</td>
+</tr>
+<tr>
+  <td colSpan={2} className='text-center'>Data-Frames</td>
+</tr>
+<tr>
+  <td></td>
+  <td>**Data-Room**</td>
+</tr>
+<tr>
+  <td colSpan={2} className='text-center'>(InstantiateObject|UpdateObject)</td>
+  <td>InstantiateObject count and id same<br/> UpdateObject initialization data same</td>
+  <td>InstantiateObject Owner ID: <br /> Live: "audience-pod"<br /> Replay: "sys"<br /><br />Target:<br /> Live: RoomAll (room_id: "")<br />Replay：RoomAll (room_id: "default-xxx...")</td>
+</tr>
+<tr>
+  <td colSpan={2} className='text-center'>Multiple Data-Frames(UpdateObject)</td>
+  <td></td>
+  <td>Target:<br /> Live: RoomAll (room_id: "")<br />Replay：RoomAll (room_id: "default-xxx...")</td>
+</tr>
+<tr>
+  <td>**Multiple Pong packets**</td>
+</tr>
+{/* Initial Segment End */}
+{/* Subsequent Segments */}
+<tr>
+  <td rowSpan={9}>Subsequent Segment protobuf</td>
+  <td className='text-center font-bold'>Replay Initial Segment</td>
+  <td className='text-center font-bold'>Replay Subsequent Segments</td>
+  <td rowSpan={2}></td>
+  <td rowSpan={2}></td>
+</tr>
+<tr>
+  <td colSpan={2} className='text-center text-xs text-zinc-500'>Live streaming has no concept of subsequent segments, so here we compare replay's initial and subsequent segments</td>
+</tr>
+<tr>
+  <td colSpan={2} className='text-center'>SegmentStartedAt</td>
+</tr>
+<tr>
+  <td colSpan={2} className='text-center'>Data-Room</td>
+</tr>
+<tr>
+  <td colSpan={2} className='text-center'>Data-Frames</td>
+</tr>
+<tr>
+  <td>**Data-Room**</td>
+</tr>
+<tr>
+  <td colSpan={2} className='text-center'>(InstantiateObject|UpdateObject)</td>
+  <td>InstantiateObject count and id same<br/> UpdateObject initialization data same</td>
+  <td>Target: <br/>Initial segment: RoomAll (room_id: "default-xxx...")<br/>Subsequent segments: CurrentPlayer</td>
+</tr>
+<tr>
+  <td colSpan={2} className='text-center'>CacheEnded</td>
+</tr>
+<tr>
+  <td colSpan={2} className='text-center'>Multiple Data-Frames(UpdateObject)</td>
+  <td>Target: RoomAll (room_id: "default-xxx...")</td>
+  <td></td>
+</tr>
+{/* Subsequent Segments End */}
+</tbody>
+</table>
+
+### Detailed Technical Difference Analysis Generated By Claude Sonnet 4
+
+#### Protobuf Field Usage Comparison
+
+| Field Number | Field Name | Live Streaming Usage | Replay Usage | Purpose Description |
+|--------------|------------|---------------------|--------------|---------------------|
+| **Field #2** | data | ✅ Frequent use | ✅ Frequent use | Identify data packets |
+| **Field #10** | pong | ✅ Heartbeat detection | ❌ Not used | Live streaming specific heartbeat |
+| **Field #14** | segment_started_at | ❌ Not used | ✅ Once per segment | Segment timestamp |
+| **Field #15** | cache_ended | ❌ Not used | ✅ Once per segment | Cache end marker |
+| **Field #16** | frames | ✅ Main payload | ✅ Main payload | Frame data array |
+
+#### Object Lifecycle Management Comparison
+
+| Lifecycle Stage | Live Streaming Processing | Replay Processing | Technical Details |
+|----------------|-------------------------|------------------|-------------------|
+| **Object Creation** | InstantiateObject (55 objects) | InstantiateObject (55 objects) | Same count and ID |
+| **Object Updates** | Continuous UpdateObject stream | Segmented UpdateObject | Live real-time, replay segmented |
+| **Object Destruction** | DestroyObject (on end) | ❌ No explicit destruction | Live streaming needs resource cleanup |
+| **Owner Identifier** | "audience-pod" | "sys" | Different permissions and sources |
+
+#### Time Synchronization Mechanism Comparison
+
+| Time Dimension | Live Streaming Implementation | Replay Implementation | Precision Difference |
+|----------------|------------------------------|---------------------|---------------------|
+| **Packet-level Timestamp** | ❌ No built-in | ✅ Microsecond level | Replay can pinpoint precisely |
+| **Segment Timestamp** | ❌ No segment concept | ✅ 10-second intervals | Replay supports jumping |
+| **Room started** | 1753926200891381 | 1753926200891381 | Exactly same start time |
+| **Sequence Guarantee** | Network transmission order | Timestamp ordering | Replay can reorder |
+
+#### Segment Strategy Detailed Comparison
+
+| Segment Feature | Live Streaming Mode | Replay Mode | Implementation Complexity |
+|----------------|-------------------|-------------|-------------------------|
+| **Initialization Segment** | ❌ No concept | ✅ Complete state | Replay needs state reconstruction |
+| **Subsequent Segments** | ❌ No concept | ✅ Incremental updates | Replay supports random access |
+| **Segment Size** | N/A | ~540-596 packets | Fixed duration segments |
+| **Overlap Handling** | N/A | Inter-segment state consistency | Needs state management |
+
+#### Replay Segment Internal Structure Comparison
+
+| Item | Initial Segment (00) | Subsequent Segments (01+) | Difference Description |
+|------|---------------------|---------------------------|------------------------|
+| **Packet Sequence Structure** | SegmentStartedAt → Data-Room → CacheEnded → Data-Frames → UpdateObjects | SegmentStartedAt → Data-Room → Data-Frames → CacheEnded → UpdateObjects | CacheEnded position different |
+| **SegmentStartedAt** | 2025-07-31 11:20:00.753128 | +10 second increment | Precise 10-second intervals |
+| **Data-Room** | ✅ Complete Room info | ✅ Same Room info | Content identical |
+| **CacheEnded Position** | 3rd packet (early) | Last few packets (delayed) | Processing order optimization |
+
+#### Replay Segment Frame Content Comparison
+
+| Frame Type | Initial Segment (00) | Subsequent Segments (01+) | Business Significance |
+|------------|---------------------|---------------------------|----------------------|
+| **Room Frame Count** | 2 frames (0.1%) | 1 frame (0.0%) | Initial segment redundant Room info |
+| **InstantiateObject** | 55 frames (2.0%) | 55 frames (2.0%) | Each segment complete object initialization |
+| **UpdateObject** | 2655 frames (97.9%) | 2632-2669 frames (97.9%) | Main data payload |
+| **Data-Frames Room** | ✅ Contains extra Room frame | ❌ No extra Room frame | Initial segment redundancy guarantee |
+
+#### Replay Segment Target Strategy Comparison
+
+| Target Type | Initial Segment (00) | Subsequent Segments (01+) |
+|-------------|---------------------|---------------------------|
+| **InstantiateObject Target** | RoomAll (complete room ID) | CurrentPlayer |
+| **UpdateObject Target** | RoomAll (complete room ID) | RoomAll (complete room ID) |
+| **Room Message Target** | RoomAll (complete room ID) | RoomAll (complete room ID) |
+

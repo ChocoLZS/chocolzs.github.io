@@ -9,6 +9,7 @@ import { AlgoliaButton } from 'pliny/search/AlgoliaButton'
 import { KBarButton } from '../search/KBarButton'
 import { CommentsIcon, ArrowTopIcon } from './icons'
 import { SearchIcon } from '../search/icons'
+import { IS_DEPLOY_IN_ZH } from '@/data/feature-flags/deployment'
 
 const ScrollTopAndComment = () => {
   const locale = useParams()?.locale as LocaleTypes
@@ -48,7 +49,7 @@ const ScrollTopAndComment = () => {
             <SearchIcon className="h-5 w-5" />
           </div>
         </SearchButtonWrapper>
-        {siteMetadata.comments?.provider && (
+        {!IS_DEPLOY_IN_ZH && siteMetadata.comments?.provider && (
           <button
             aria-label={t('scrollcomment')}
             onClick={handleScrollToComment}
