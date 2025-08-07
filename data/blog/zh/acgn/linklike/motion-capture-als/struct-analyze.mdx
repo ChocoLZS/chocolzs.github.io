@@ -1,0 +1,675 @@
+---
+title: Als（直播/回放）动捕数据传输结构分析
+series:
+  order: 2
+  title: 'Link！Like！-动捕数据-als'
+date: '2025-08-07'
+lastmod: '2025-08-07'
+language: zh
+tags: ['逆向', 'linkura', 'Link!Like!', 'lovelive', 'protobuf', '手游', '二次元', 'ACGN']
+authors: ['choco']
+draft: false
+wip: false
+summary: 这篇文章主要是总结林库拉（Linkura）直播/回放动捕数据传输的结构。
+---
+
+## 省流
+
+使用了 **protobuf** 进行数据序列化。
+
+本文只分析从服务端获取的数据，从客户端发送的数据不在此处分析。
+
+本文使用了笔者编写的工具进行分析 `TODO 地址`，其实算是对数据包结构的总结，而不是逆向分析的复盘。
+
+总结[点这里🫲](#总结)
+
+## 前言
+
+总所周知（），Linkura在25年5月29日的直播上使用了新的动捕回放，相较之前使用[monobitinc](https://www.monobitengine.com/mrs/)家的mrs技术，直播相对来说更加稳定流畅了。
+
+实际wireshark抓包测试，体验上是将更多小包拼接成大包来进行tcp发送，减少了丢小包的数量。（因为如果丢包是直接丢大包（笑））
+
+关于cdn上存放的回放文件格式：
+
+- 提供了.md文件（一开始以为是markdown，写此片文章时认为是metadata）作为一开始的元信息描述文件。
+
+- 借用了流媒体相关的hls技术，使用了 **m3u8** 进行切片，每个分片是.ts文件，但它不是 **MPEG-TS**，没有半毛钱关系。
+
+估计als这家公司是借用hls这一套设计，一方面借用cdn相关基础设施，另一方面也可能是为了兼容现有的视频流回放播放方案。
+
+## protobuf
+
+具体包类型也可以在 Alstromeria.dll Alst.Protocol 中的
+`DataPack`、`DataFrame`中找到
+
+```protobuf datapack.proto
+package als;
+
+message DataPack
+{
+	oneof control
+{
+	bool data = 2;
+	bool pong = 10; // 直播会使用
+	int64 segment_started_at = 14;
+	bool cache_ended = 15;
+}
+	repeated .als.DataFrame frames = 16;
+}
+
+message DataFrame
+{
+	oneof message
+{
+	.als.InstantiateObject instantiate_object = 128;
+	.als.UpdateObject update_object = 129;
+	.als.Room room = 143;
+	.als.AuthorizeResponse authorize_response = 144;    // 直播
+	.als.JoinRoomResponse join_room_response = 147;     // 直播
+}
+}
+
+```
+
+## 回放数据
+
+由于回放数据相对来说比较好获取，所以先介绍回放数据的结构。
+
+接下来以 25-07-31 ，小三角给粉丝投稿的物品命名这集为例。
+
+### 数据包格式
+
+```c
+struct Packet {
+  uint16_t length;                  // 大端序，包长度：live_mark + microseconds + protobuf_data
+  uint8_t live_mark;                // 0 代表直播 1 代表回放 回放这里一直是 0x01
+  uint64_t microseconds;            // 大端序，微秒时间戳
+  uint8_t protobuf_data[];          // 长度为 length - 1 - 8
+}
+```
+
+### 数据介绍
+
+#### `811c9dc5b61ac_segment00000.ts` 分片结构分析
+
+##### 数据包总结
+
+```
+================== STATISTICS ==================
+Total packets analyzed: 596
+Packets with control messages: 596 (100.0%)
+Packets with frames: 594 (99.7%)
+Total frames: 2712
+
+Control Message Types:
+  Data: 594 (99.7%)
+  SegmentStartedAt: 1 (0.2%)
+  CacheEnded: 1 (0.2%)
+  Total Control Messages: 596
+
+Frame Message Types:
+  Object Messages:
+    InstantiateObject: 55 (2.0%)
+    UpdateObject: 2655 (97.9%)
+  Room: 2 (0.1%)
+  Total Frame Messages: 2712
+================================================
+```
+
+初始化00 ts分片前几个包由如下结构构成：
+
+1. SegmentStartedAt
+2. Data-Room
+3. CacheEnded
+4. Data-Frames(InstantiateObject|UpdateObject)
+5. 若干Data-Frames(UpdateObject)
+
+##### SegmentStartedAt
+
+```
+=== Packet #1: 18 bytes ===
+  Format: Standard protobuf format (int16 length + int8 unused + int64 timestamp + protobuf data)
+  Timestamp: 2025-07-31 11:20:00.753128 UTC (1753960800753128)
+  Raw data length: 9 bytes
+  Raw data (first 9 bytes): 70 e8 ab ea 93 fd e6 8e 03
+  Protobuf Fields:
+    Field #14: Varint (wire type: 0, 9 bytes)
+      Raw bytes: 70 e8 ab ea 93 fd e6 8e 03
+  Control message:
+    Type: SegmentStartedAt, Timestamp: 1753960800753128
+  No frames
+```
+
+分片开始渲染的微秒级时间戳，横向对比分片 01、02、03、04、05
+可以发现分片持续时间是10秒，与m3u8里的描述一致（#EXTINF:10.000）。
+
+| 序号 | 时间 |
+|---|----|
+| 00 | 2025-07-31 11:20:00.753128 UTC (1753960800753128) |
+| 01 | 2025-07-31 11:20:10.753128 UTC (1753960810753128) |
+| 02 | 2025-07-31 11:20:20.753128 UTC (1753960820753128) |
+| 03 | 2025-07-31 11:20:30.753128 UTC (1753960830753128) |
+| 04 | 2025-07-31 11:20:40.753128 UTC (1753960840753128) |
+
+##### Data-Room
+
+```
+=== Packet #2: 72 bytes ===
+  Format: Standard protobuf format (int16 length + int8 unused + int64 timestamp + protobuf data)
+  Timestamp: 2025-07-31 11:20:40.765541 UTC (1753960840765541)
+  Raw data length: 63 bytes
+  Raw data (first 32 bytes): 82 01 3a fa 08 37 0a 2c 64 65 66 61 75 6c 74 2d 32 35 64 31 65 65 35 66 2d 62 36 36 35 2d 34 61
+  Protobuf Fields:
+    Field #16: Length-delimited (wire type: 2, 61 bytes)
+      Raw bytes: 82 01 3a fa 08 37 0a 2c 64 65 66 61 75 6c 74 2d 32 35 64 31 65 65 35 66 2d 62 36 36 35 2d 34 61 39 63 2d 38 33 63 32 2d 38 34 66 30 32 39 37 62 31 35 34 62 10 f5 af aa a1 fc e5 8e 03
+    Field #2: Varint (wire type: 0, 2 bytes)
+      Raw bytes: 10 01
+  Control message:
+    Type: Data, Value: true
+  Frames (1):
+    Frame #1: 
+      Message: Room (id: "default-25d1ee5f-b665-4a9c-83c2-84f0297b154b", started: 1753926200891381, ended: 0)
+```
+
+started 时间是 2025-07-31T01:43:20.891Z 目前没找到什么来源，`get_archive_list` 无法获取到相关信息。
+
+##### CacheEnded
+
+```
+=== Packet #3: 11 bytes ===
+  Format: Standard protobuf format (int16 length + int8 unused + int64 timestamp + protobuf data)
+  Timestamp: 2025-07-31 11:20:00.753128 UTC (1753960800753128)
+  Raw data length: 2 bytes
+  Raw data (first 2 bytes): 78 01
+  Protobuf Fields:
+    Field #15: Varint (wire type: 0, 2 bytes)
+      Raw bytes: 78 01
+  Control message:
+    Type: CacheEnded, Value: true
+  No frames
+```
+
+##### Data-Frames(InstantiateObject|UpdateObject)
+
+```
+=== Packet #4: 11780 bytes ===
+  Format: Standard protobuf format (int16 length + int8 unused + int64 timestamp + protobuf data)
+  Timestamp: 2025-07-31 11:20:00.753128 UTC (1753960800753128)
+  Raw data length: 11771 bytes
+  Raw data (first 32 bytes): 82 01 3a fa 08 37 0a 2c 64 65 66 61 75 6c 74 2d 32 35 64 31 65 65 35 66 2d 62 36 36 35 2d 34 61
+  Protobuf Fields:
+  ...
+  Control message:
+    Type: Data, Value: true
+  Frames (95):
+    Frame #1: 
+      Message: Room (id: "default-25d1ee5f-b665-4a9c-83c2-84f0297b154b", started: 1753926200891381, ended: 0)
+    InstantiateObject... Owner ID: "sys" Target: RoomAll (room_id: "default-25d1ee5f-b665-4a9c-83c2-84f0297b154b")
+    UpdateObject... Target: RoomAll (room_id: "default-25d1ee5f-b665-4a9c-83c2-84f0297b154b")
+```
+
+Owner ID: "sys"
+Target: RoomAll (room_id: "default-25d1ee5f-b665-4a9c-83c2-84f0297b154b")
+
+##### 若干Data-Frames(UpdateObject)
+
+```
+=== Packet #5: 1958 bytes ===
+  Format: Standard protobuf format (int16 length + int8 unused + int64 timestamp + protobuf data)
+  Timestamp: 2025-07-31 11:20:00.759993 UTC (1753960800759993)
+  Raw data length: 1949 bytes
+  Raw data (first 32 bytes): 82 01 5d 8a 08 5a 40 b3 c1 83 f1 02 48 01 52 20 00 00 00 00 00 00 00 00 dd bd f4 3e e2 d9 ad 3c
+  Protobuf Fields:
+  ...
+  Control message:
+    Type: Data, Value: true
+  Frames (4):
+    UpdateObject... Target: RoomAll (room_id: "default-25d1ee5f-b665-4a9c-83c2-84f0297b154b")
+```
+
+#### 01分片结构分析
+
+```
+================== STATISTICS ==================
+Total packets analyzed: 591
+Packets with control messages: 590 (99.8%)
+Packets with frames: 589 (99.7%)
+Total frames: 2705
+
+Control Message Types:
+  Data: 588 (99.7%)
+  SegmentStartedAt: 1 (0.2%)
+  CacheEnded: 1 (0.2%)
+  Total Control Messages: 590
+
+Frame Message Types:
+  Object Messages:
+    InstantiateObject: 55 (2.0%)
+    UpdateObject: 2649 (97.9%)
+  Room: 1 (0.0%)
+  Total Frame Messages: 2705
+================================================
+```
+
+与00有区别
+
+1. SegmentStartedAt 👈 相比于00 过了10秒
+2. Data-Room 与00的包相同
+3. Data-Frames(InstantiateObject|UpdateObject)  👈 Target: CurrentPlayer, 少了个Room
+4. CacheEnded 👈 保持一致
+5. 若干Data-Frames(UpdateObject) 没有变化
+
+**116分片统计信息**
+
+```
+================== STATISTICS ==================
+Total packets analyzed: 540
+Packets with control messages: 539 (99.8%)
+Packets with frames: 538 (99.6%)
+Total frames: 2725
+
+Control Message Types:
+  Data: 537 (99.6%)
+  SegmentStartedAt: 1 (0.2%)
+  CacheEnded: 1 (0.2%)
+  Total Control Messages: 539
+
+Frame Message Types:
+  Object Messages:
+    InstantiateObject: 55 (2.0%)
+    UpdateObject: 2669 (97.9%)
+  Room: 1 (0.0%)
+  Total Frame Messages: 2725
+================================================
+```
+
+**233分片统计信息**
+
+```
+================== STATISTICS ==================
+Total packets analyzed: 590
+Packets with control messages: 589 (99.8%)
+Packets with frames: 588 (99.7%)
+Total frames: 2688
+
+Control Message Types:
+  Data: 587 (99.7%)
+  SegmentStartedAt: 1 (0.2%)
+  CacheEnded: 1 (0.2%)
+  Total Control Messages: 589
+
+Frame Message Types:
+  Object Messages:
+    InstantiateObject: 55 (2.0%)
+    UpdateObject: 2632 (97.9%)
+  Room: 1 (0.0%)
+  Total Frame Messages: 2688
+================================================
+```
+
+与01分片结构相同
+
+#### 分片总结
+
+分片总的来说分为两种
+1. 最初初始化分片
+2. 后续的数据分片
+
+抓包测试时，播放器实际获取分片的行为是：
+
+获取00、01、03分片，然后再根据 `本編開始 "play_time_second": seconds` 来查找偏移量，获取目标分片。
+
+## 直播数据
+
+直播数据是通过[笔者编写的工具]()获取的
+
+同样以 25-07-31 ，小三角给粉丝投稿的物品命名这集为例。
+
+### 数据包格式
+
+```c
+struct Packet {
+  uint16_t length;                  // 大端序，包长度：live_mark + protobuf_data
+  uint8_t live_mark;                // 0 代表直播 1 代表回放 直播这里一直是 0x00
+  uint8_t protobuf_data[];          // 长度为 length - 1
+}
+```
+
+可以看见数据中并未携带时间戳
+所以工具又补了一个时间戳
+
+```c
+struct TimestampPacket {
+  uint8_t length;
+  uint64_t microseconds;
+}
+```
+
+工具保存的二进制为若干 Packet + TimestampPacket
+
+### 数据介绍
+
+#### 初始分片结构分析
+
+##### 数据包总结
+
+```
+================== STATISTICS ==================
+Total packets analyzed: 450
+Packets with control messages: 450 (100.0%)
+Packets with frames: 445 (98.9%)
+Total frames: 2049
+
+Control Message Types:
+  Data: 445 (98.9%)
+  Pong: 5 (1.1%)
+  Total Control Messages: 450
+
+Frame Message Types:
+  Response Messages:
+    AuthorizeResponse: 1 (0.0%)
+    JoinRoomResponse: 1 (0.0%)
+  Object Messages:
+    InstantiateObject: 55 (2.7%)
+    UpdateObject: 1991 (97.2%)
+  Room: 1 (0.0%)
+  Total Frame Messages: 2049
+================================================
+```
+
+握手分片前几个包由如下结构构成：
+
+1. AuthorizeResponse
+2. Data-Room
+3. JoinRoomResponse
+4. Data-Frames(InstantiateObject|UpdateObject)
+5. 若干Data-Frames(UpdateObject)
+6. 若干Pong包
+
+##### AuthorizeResponse
+
+对于转换来说不重要，就是正常的握手流程
+
+##### Data-Room
+
+```
+=== Packet #3: 64 bytes ===
+  Format: Mixed protobuf format (int16 length 64 + int8 unused 0x00 + protobuf data)
+  Raw data length: 63 bytes
+  Raw data (first 32 bytes): 82 01 3a fa 08 37 0a 2c 64 65 66 61 75 6c 74 2d 32 35 64 31 65 65 35 66 2d 62 36 36 35 2d 34 61
+  Protobuf Fields:
+    Field #16: Length-delimited (wire type: 2, 61 bytes)
+      Raw bytes: 82 01 3a fa 08 37 0a 2c 64 65 66 61 75 6c 74 2d 32 35 64 31 65 65 35 66 2d 62 36 36 35 2d 34 61 39 63 2d 38 33 63 32 2d 38 34 66 30 32 39 37 62 31 35 34 62 10 f5 af aa a1 fc e5 8e 03
+    Field #2: Varint (wire type: 0, 2 bytes)
+      Raw bytes: 10 01
+  Control message:
+    Type: Data, Value: true
+  Frames (1):
+    Frame #1: 
+      Message: Room (id: "default-25d1ee5f-b665-4a9c-83c2-84f0297b154b", started: 1753926200891381, ended: 0)
+```
+
+✅ 与回放相同
+
+##### JoinRoomResponse
+
+不重要，就是正常的握手流程
+
+##### Data-Frames(InstantiateObject|UpdateObject)
+
+```
+=== Packet #7: 7997 bytes ===
+  Format: Mixed protobuf format (int16 length 7997 + int8 unused 0x00 + protobuf data)
+  Raw data length: 7996 bytes
+  Raw data (first 32 bytes): 82 01 44 82 08 41 40 9c 82 a2 c3 04 4a 0c 61 75 64 69 65 6e 63 65 2d 70 6f 64 52 1e e9 ff ff ff
+  Protobuf Fields:
+  ...
+  Control message:
+    Type: Data, Value: true
+  Frames (94):
+    InstantiateObject... Owner ID: "audience-pod" Target: RoomAll (room_id: "")
+    UpdateObject... Target: RoomAll (room_id: "")
+```
+
+InstantiateObject id，数量与 回放一致。不一样的就是 Owner ID 和 Target Room ID。
+UpdateObject Target Room ID 为空
+
+##### 若干Data-Frames(UpdateObject)
+
+```
+=== Packet #13: 1816 bytes ===
+  Format: Mixed protobuf format (int16 length 1816 + int8 unused 0x00 + protobuf data)
+  Raw data length: 1815 bytes
+  Raw data (first 32 bytes): 82 01 2f 8a 08 2c 40 b3 c1 83 f1 02 48 01 52 20 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  Protobuf Fields:
+  ...
+  Control message:
+    Type: Data, Value: true
+  Frames (4):
+    UpdateObject... Target: RoomAll (room_id: "")
+```
+
+##### 若干Pong包
+
+对于回放来说不重要，直播用于检测心跳用的
+
+#### 后续分片分析
+
+```
+================== STATISTICS ==================
+Total packets analyzed: 450
+Packets with control messages: 450 (100.0%)
+Packets with frames: 445 (98.9%)
+Total frames: 1974
+
+Control Message Types:
+  Data: 445 (98.9%)
+  Pong: 5 (1.1%)
+  Total Control Messages: 450
+
+Frame Message Types:
+  Object Messages:
+    UpdateObject: 1974 (100.0%)
+  Total Frame Messages: 1974
+================================================
+```
+
+理论上来说目前直播没有后续分片的说法，无法溯源+拖动进度条
+只有 UpdateObject 和 Pong 包
+
+结束的分片
+```
+================== STATISTICS ==================
+Total packets analyzed: 308
+Packets with control messages: 308 (100.0%)
+Packets with frames: 193 (62.7%)
+Total frames: 594
+
+Control Message Types:
+  Data: 193 (62.7%)
+  Pong: 115 (37.3%)
+  Total Control Messages: 308
+
+Frame Message Types:
+  Object Messages:
+    UpdateObject: 576 (97.0%)
+    DestroyObject: 18 (3.0%)
+  Total Frame Messages: 594
+================================================
+```
+
+有DestroyObject指令，看了前后的包，基本都是Pong包。
+
+可以推测是服务器关闭后做的finalize相关的操作。
+
+## 总结
+
+通过对比直播和回放的数据包结构，我们可以发现以下异同点：
+
+<table className="[&_tbody_tr_td]:px-2 [&_tbody_tr_th]:px-2 [&_tbody_tr]:border-b [&_tbody_*]:align-middle">
+<caption>总结大表</caption>
+<tbody>
+<tr>
+  <th width="75">项目</th>
+  <th width="150">直播数据</th>
+  <th width="150">回放数据</th>
+  <th>相同说明</th>
+  <th>差异说明</th>
+</tr>
+{/* 包结构 */}
+<tr>
+  <td rowSpan={3}>包结构</td>
+  <td colSpan={2} className='text-center'>uint16_t length <br/> uint8_t live_mark</td>
+  <td >length: 2字节，大端序 <br/> mark: 1字节标记</td>
+  <td >live_mark：<br />直播是 0x00，回放是 0x01</td>
+</tr>
+<tr>
+  <td></td>
+  <td>**uint64_t timestamp**</td>
+  <td></td>
+  <td>回放携带了微秒时间戳</td>
+</tr>
+<tr>
+  <td colSpan={2} className='text-center'>protobuf</td>
+</tr>
+{/* 包结构结束 */}
+{/* 初始分片 */}
+<tr>
+  <td rowSpan={8}>初始分片 protobuf</td>
+  <td>AuthorizeResponse</td>
+  <td>SegmentStartedAt</td>
+</tr>
+<tr>
+  <td colSpan={2} className='text-center'>Data-Room</td>
+  <td> Room: live id, started, ended 相同 </td>
+</tr>
+<tr>
+  <td>JoinRoomResponse</td>
+  <td>CacheEnded</td>
+</tr>
+<tr>
+  <td colSpan={2} className='text-center'>Data-Frames</td>
+</tr>
+<tr>
+  <td></td>
+  <td>**Data-Room**</td>
+</tr>
+<tr>
+  <td colSpan={2} className='text-center'>(InstantiateObject|UpdateObject)</td>
+  <td>InstantiateObject数量，id相同<br/> UpdateObject初始化数据也相同</td>
+  <td>InstantiateObject的Owner ID: <br /> 直播: "audience-pod"<br /> 回放: "sys"<br /><br />Target:<br /> 直播: RoomAll (room_id: "")<br />回放：RoomAll (room_id: "default-xxx...")</td>
+</tr>
+<tr>
+  <td colSpan={2} className='text-center'>若干Data-Frames(UpdateObject)</td>
+  <td></td>
+  <td>Target:<br /> 直播: RoomAll (room_id: "")<br />回放：RoomAll (room_id: "default-xxx...")</td>
+</tr>
+<tr>
+  <td>**若干Pong包**</td>
+</tr>
+{/* 初始分片结束 */}
+{/* 后续分片 */}
+<tr>
+  <td rowSpan={9}>后续分片 protobuf</td>
+  <td className='text-center font-bold'>回放初始分片</td>
+  <td className='text-center font-bold'>回放后续分片</td>
+  <td rowSpan={2}></td>
+  <td rowSpan={2}></td>
+</tr>
+<tr>
+  <td colSpan={2} className='text-center text-xs text-zinc-500'>直播流没有后续分片的说法，所以在这里比较回放的初始分片和后续分片</td>
+</tr>
+<tr>
+  <td colSpan={2} className='text-center'>SegmentStartedAt</td>
+</tr>
+<tr>
+  <td colSpan={2} className='text-center'>Data-Room</td>
+</tr>
+<tr>
+  <td colSpan={2} className='text-center'>Data-Frames</td>
+</tr>
+<tr>
+  <td>**Data-Room**</td>
+</tr>
+<tr>
+  <td colSpan={2} className='text-center'>(InstantiateObject|UpdateObject)</td>
+  <td>InstantiateObject数量，id相同<br/> UpdateObject初始化数据也相同</td>
+  <td>Target: <br/>直播分片: RoomAll (room_id: "default-xxx...")<br/>后续分片: CurrentPlayer</td>
+</tr>
+<tr>
+  <td colSpan={2} className='text-center'>CacheEnded</td>
+</tr>
+<tr>
+  <td colSpan={2} className='text-center'>若干Data-Frames(UpdateObject)</td>
+  <td>Target: RoomAll (room_id: "default-xxx...")</td>
+  <td></td>
+</tr>
+{/* 后续分片结束 */}
+</tbody>
+</table>
+
+### 详细技术差异分析 Generated By Claude Sonnet 4
+
+#### Protobuf字段使用对比
+
+| Field编号 | 字段名称 | 直播使用 | 回放使用 | 用途说明 |
+|----------|----------|----------|----------|----------|
+| **Field #2** | data | ✅ 频繁使用 | ✅ 频繁使用 | 标识数据包 |
+| **Field #10** | pong | ✅ 心跳检测 | ❌ 不使用 | 直播专用心跳 |
+| **Field #14** | segment_started_at | ❌ 不使用 | ✅ 每分片1次 | 分片时间戳 |
+| **Field #15** | cache_ended | ❌ 不使用 | ✅ 每分片1次 | 缓存结束标记 |
+| **Field #16** | frames | ✅ 主要载荷 | ✅ 主要载荷 | 帧数据数组 |
+
+#### 对象生命周期管理对比
+
+| 生命周期阶段 | 直播处理 | 回放处理 | 技术细节 |
+|-------------|----------|----------|----------|
+| **对象创建** | InstantiateObject (55个) | InstantiateObject (55个) | 数量和ID完全相同 |
+| **对象更新** | 连续UpdateObject流 | 按分片UpdateObject | 直播实时，回放分段 |
+| **对象销毁** | DestroyObject (结束时) | ❌ 无显式销毁 | 直播需要清理资源 |
+| **Owner标识** | "audience-pod" | "sys" | 权限和来源不同 |
+
+#### 时间同步机制对比
+
+| 时间维度 | 直播实现 | 回放实现 | 精度差异 |
+|----------|----------|----------|----------|
+| **包级时间戳** | ❌ 无内置 | ✅ 微秒级 | 回放可精确定位 |
+| **分片时间戳** | ❌ 无分片概念 | ✅ 10秒间隔 | 回放支持跳转 |
+| **Room started** | 1753926200891381 | 1753926200891381 | 完全相同的起始时间 |
+| **时序保证** | 网络传输顺序 | 时间戳排序 | 回放可重排序 |
+
+#### 分片策略详细对比
+
+| 分片特征 | 直播模式 | 回放模式 | 实现复杂度 |
+|----------|----------|----------|------------|
+| **初始化分片** | ❌ 无概念 | ✅ 完整状态 | 回放需要状态重建 |
+| **后续分片** | ❌ 无概念 | ✅ 增量更新 | 回放支持随机访问 |
+| **分片大小** | N/A | ~540-596包 | 固定时长分片 |
+| **overlap处理** | N/A | 分片间状态一致 | 需要状态管理 |
+
+#### 回放分片内部结构对比
+
+| 项目 | 初始分片 (00) | 后续分片 (01+) | 差异说明 |
+|------|---------------|----------------|----------|
+| **包序列结构** | SegmentStartedAt → Data-Room → CacheEnded → Data-Frames → UpdateObjects | SegmentStartedAt → Data-Room → Data-Frames → CacheEnded → UpdateObjects | CacheEnded位置不同 |
+| **SegmentStartedAt** | 2025-07-31 11:20:00.753128 | +10秒递增 | 精确的10秒间隔 |
+| **Data-Room** | ✅ 完整Room信息 | ✅ 相同Room信息 | 内容完全一致 |
+| **CacheEnded位置** | 第3个包 (早期) | 倒数几个包 (延后) | 处理顺序优化 |
+
+#### 回放分片帧内容对比
+
+| 帧类型 | 初始分片 (00) | 后续分片 (01+) | 业务意义 |
+|--------|---------------|----------------|----------|
+| **Room帧数量** | 2个 (0.1%) | 1个 (0.0%) | 初始分片重复Room信息 |
+| **InstantiateObject** | 55个 (2.0%) | 55个 (2.0%) | 每个分片都完整初始化对象 |
+| **UpdateObject** | 2655个 (97.9%) | 2632-2669个 (97.9%) | 主要数据载荷 |
+| **Data-Frames中Room** | ✅ 包含额外Room帧 | ❌ 无额外Room帧 | 初始分片冗余保证 |
+
+#### 回放分片Target策略对比
+
+| Target类型 | 初始分片 (00) | 后续分片 (01+) |
+|------------|---------------|----------------|
+| **InstantiateObject Target** | RoomAll (完整房间ID) | CurrentPlayer |
+| **UpdateObject Target** | RoomAll (完整房间ID) | RoomAll (完整房间ID) |
+| **Room消息Target** | RoomAll (完整房间ID) | RoomAll (完整房间ID) |
+
