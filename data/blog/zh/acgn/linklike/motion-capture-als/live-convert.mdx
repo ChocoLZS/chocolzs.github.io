@@ -3,15 +3,102 @@ title: 直播数据转换为回放格式
 series:
   order: 3
   title: 'Link！Like！-动捕数据-als'
-date: '2025-06-26'
-lastmod: '2025-06-26'
+date: '2025-08-07'
+lastmod: '2025-08-07'
 language: zh
 tags: ['逆向', 'linkura', 'Link!Like!', 'lovelive', 'protobuf']
 authors: ['choco']
 # images: ['/static/images/kaho-big-head.png']
 draft: true
 wip: true
-summary: todo
+summary: 本文主要介绍如何将直播数据转换为回放格式的逻辑。
 ---
 
-todo
+根据上篇文章的最终结果分析。
+
+我们要尝试做如下转换：
+
+1. 初始化分片转换。
+2. 后续分片转换。
+3. m3u8文件的构造。
+
+## 分片初始化数据
+
+为了达成上述目的，首先需要研究每个分片的初始化数据以及时间戳的处理方式。
+
+- SegmentStartedAt - 起始微秒时间戳
+- Data-Room - 从直播数据copy过来的 Room (id: "default-xxx", started: timestamp, ended: 0)
+
+- (后续分片) DataFrames: InstantiateObject 和 UpdateObject
+- CacheEnded - Value = true
+- (初始分片) DataFrames: InstantiateObject 和 UpdateObject
+
+### 时间戳问题
+
+通过 `工具` 获取得到的数据是实时的。
+一般官方推流时间是，正式直播开始前10分钟推动捕数据。如果在25分通过工具获取到的动捕数据，那么时间戳也只能按照25分钟来处理。
+
+然后 **初始化分片** 中：
+
+SegmentStartedAt、Data-Room、CacheEnded、DataFrames 的时间戳都是一致的。
+
+所以转换步骤如下：
+1. 将直播数据协商至DataFrames(InstantiateObject|UpdateObject) 阶段的时间戳作为初始化时间戳，记为 `initTimestamp`。
+2. 创建 SegmentStartedAt，时间戳为 `initTimestamp`，值为 `initTimestamp`。
+3. 拷贝 Data-Room，时间戳为 `initTimestamp`。
+4. 创建 CacheEnded，时间戳为 `initTimestamp`，值为 `true`。
+5. 创建 DataFrames(InstantiateObject|UpdateObject)，时间戳为 `initTimestamp`。
+  - 第一个Frames 拷贝 Data-Room
+  - 后续Frames 从直播中的Frames进行拷贝
+    - InstantiateObject: Owner ID 变为 sys; Target RoomAll 中的 room_id 需要进行填充
+    - UpdateObject: Target RoomAll 中的 room_id 需要进行填充
+6. 拷贝后续UpdateObject包，时间戳为直播数据记录的时间戳。
+  - UpdateObject: Target RoomAll 中的 room_id 需要进行填充
+7. 忽略直播数据中的Pong包
+
+**后续分片**：
+
+注意第四步与第五步的步骤顺序不能替换
+
+1. 我们需要计算离 上一个分片 `lastInitTimestamp + 10秒` 最近(≥)的UpdateObject的时间戳作为当前分片的初始化时间戳，记为 `currentInitTimestamp`。
+2. 创建 SegmentStartedAt，时间戳为 `lastInitTimestamp + 10秒`，值为 `lastInitTimestamp + 10秒`。
+3. 拷贝 Data-Room，时间戳为 `currentInitTimestamp`。
+4. 拷贝初始化分片的 DataFrames(InstantiateObject|UpdateObject)，时间戳为 `currentInitTimestamp`。
+  - 注意时间戳为 `currentInitTimestamp`
+  - 去除Data-Room DataFrame
+  - InstantiateObject: Target 变为 CurrentPlayer
+  - UpdateObject: Target 变为 CurrentPlayer
+5. 创建 CacheEnded，时间戳为 `currentInitTimestamp`，值为 `true`。
+6. 拷贝后续UpdateObject包，时间戳为直播数据记录的时间戳。
+  - UpdateObject: Target RoomAll 中的 room_id 需要进行填充
+  - 初始化数据后的第一个 UpdateObject DataFrames的时间戳就就是 `currentInitTimestamp`。
+7. 忽略直播数据中的Pong包
+8. 忽略DestroyObject数据
+9. 重复此操作
+
+## m3u8文件的构造
+
+```
+
+#EXTM3U8
+#EXT-X-VERSION:3
+#EXT-X-PLAYLIST-TYPE:VOD
+#EXT-X-MEDIA-SEQUENCE:0
+#EXT-X-TARGETDURATION:10
+#EXTINF:10.000,
+...000.ts
+#EXTINF:10.000,
+...000.ts
+...
+...
+##EXTINF:结尾时间,
+...结束分片.ts
+#EXT-X-ENDLIST
+
+```
+
+## 其它问题
+
+关于时间戳记录其实是闪光藤岛慈大佬告诉我需要添加的。具体commit为 [3a1f9416](https://github.com/ChocoLZS/linkura-cli/pull/1/commits/3a1f0416edad99f050a37568eed3e94f66e056eb)。
+
+由于直播获取数据的开发的时间比此commit要早，所以之前有几次的动捕数据是没有时间戳的。复原起来需要更多的时间。
