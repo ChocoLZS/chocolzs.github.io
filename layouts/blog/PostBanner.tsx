@@ -62,12 +62,12 @@ export default function PostMinimal({
             )}
             <div className="prose max-w-none py-4 dark:prose-invert">{children}</div>
             <Share title={title} slug={slug} />
-            {/* <div className="pb-6 pt-6 text-center text-gray-700 dark:text-gray-300" id="comment">
+            <div className="pb-6 pt-6 text-center text-gray-700 dark:text-gray-300" id="comment">
               {siteMetadata.iswaline === true && <WalineComments />}
               {siteMetadata.comments && siteMetadata.iscomments === true && (
                 <Comments slug={slug} />
               )}
-            </div> */}
+            </div>
             <footer>
               <div className="flex flex-col text-sm font-medium sm:flex-row sm:justify-between sm:text-base">
                 {prev && prev.slug && (

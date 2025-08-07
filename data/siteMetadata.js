@@ -92,8 +92,8 @@ const siteMetadata = {
   // if set to true, get a free account there : https://formspree.io/ and go to read.me doc
   formspree: false,
   // waline support
-  iswaline: false,
-  walineServer: '',
+  iswaline: true,
+  walineServer: 'https://waline-for-blog-ecru.vercel.app/',
 }
 
 module.exports = siteMetadata

@@ -132,7 +132,7 @@ export default async function PostLayout({
                 <Link href={editUrl(filePath)}>{t('github')}</Link>
               </div>
               <Share title={title} slug={slug} />
-              {/* <div
+              <div
                 className="mt-10 pb-6 pt-6 text-center text-gray-700 dark:text-gray-300"
                 id="comment"
               >
@@ -140,7 +140,7 @@ export default async function PostLayout({
                 {siteMetadata.comments && siteMetadata.iscomments === true && (
                   <Comments slug={slug} />
                 )}
-              </div> */}
+              </div>
             </div>
             <footer>
               <div className="divide-gray-200 text-sm font-medium leading-5 dark:divide-gray-700 xl:col-start-1 xl:row-start-2 xl:divide-y">
