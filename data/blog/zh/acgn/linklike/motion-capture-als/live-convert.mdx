@@ -10,9 +10,11 @@ tags: ['逆向', 'linkura', 'Link!Like!', 'lovelive', 'protobuf']
 authors: ['choco']
 # images: ['/static/images/kaho-big-head.png']
 draft: false
-wip: true
+wip: false
 summary: 本文主要介绍如何将直播数据转换为回放格式的逻辑。
 ---
+
+> 转换工具实现：[地址](https://github.com/ChocoLZS/linkura-cli/releases/tag/linkura-motion-cli-v1.0.0)
 
 根据上篇文章的最终结果分析。
 
@@ -108,7 +110,7 @@ SegmentStartedAt、Data-Room、CacheEnded、DataFrames 的时间戳都是一致�
 
 于是接下来要尝试分析原因：
 
-结果发现，官方提供的每个回放初始化分片中，DataFrames(InstantiateObject|UpdateObject) 中的 UpdateObject 有好几个DataFrame是不一致的
+1. 首先发现，官方提供的每个回放初始化分片中，DataFrames(InstantiateObject|UpdateObject) 中的 UpdateObject 有好几个DataFrame是不一致的
 
 <details>
 <summary>分片1和分片2对比</summary>
@@ -352,9 +354,88 @@ SegmentStartedAt、Data-Room、CacheEnded、DataFrames 的时间戳都是一致�
 ```
 </details>
 
+经分析下一帧的初始化 UpdateObject 数据依赖于上一帧最后变化的内容。
+
+以分片1和分片2为例，分片1的最后几个包里面关于UpdateObject的payload，就是分片2初始化中UpdateObject的payload。
+
+为尽可能还原回放数据格式，所以每个分片的初始化payload不能仅仅是复制这么简单。
+
+2. 描述文件时间戳问题
+
+官方提供的.md文件中
+
+```
+{
+  "room_id":"default-25d1ee5f-b665-4a9c-83c2-84f0297b154b",
+  "playlist_file":"811c9dc5b61ac.m3u8",
+  "live_started_at":"2025-07-31T10:43:20.891381+09:00",
+  "joined_room_at":"2025-07-31T20:20:00.75312812+09:00"
+}
+```
+
+`live_started_at` 和` joined_room_at` 十分重要
+
+live_started_at: 对应着直播获取的Data-Room中的started时间戳字段
+
+joined_room_at: 对应着直播握手获取到的 DataFrames(InstantiateObject|UpdateObject) 时候的时间戳。
+
+写.md文件的具体逻辑在[此处](https://github.com/ChocoLZS/linkura-cli/blob/c5f15d2d005c7ddf3ba93cb58a9774d295e59b86/crates/packet/src/als/converter.rs#L301)
+
+3. 包文件时间戳问题
+
+尝试用工具转换回放数据时，发现成功率只有75%，一方面是因为上方描述文件中的时间戳有误，时间戳需要与初始化包一致。
+
+另一方面如下：
+
+![角色没有正常接收动捕数据](/static/images/blog/acgn/linklike/motion-capture-als/08-07-ruri.webp)
+
+经排查，是发现录制直播数据的服务器的时钟比ntp服务器时间快了1分多钟，通过转换工具将每个包整体时间往前调整了1分钟，最后成功播放。
+
+## 真正能工作的步骤如下：
+
+### 1. 确保录制服务器上的时钟与NTP服务器保持同步。
+
+### 2. 具体转换步骤：(加粗字体是新增步骤)
+1. 将直播数据协商至DataFrames(InstantiateObject|UpdateObject) 阶段的时间戳作为初始化时间戳，记为 `initTimestamp`。
+2. 创建 SegmentStartedAt，时间戳为 `initTimestamp`，值为 `initTimestamp`。
+3. 拷贝 Data-Room，时间戳为 `initTimestamp`。
+4. 创建 CacheEnded，时间戳为 `initTimestamp`，值为 `true`。
+5. 创建 DataFrames(InstantiateObject|UpdateObject)，时间戳为 `initTimestamp`。**并记录此DataFrames为 initDataFrames**
+  - 第一个Frames 拷贝 Data-Room
+  - 后续Frames 从直播中的Frames进行拷贝
+    - InstantiateObject: Owner ID 变为 sys; Target RoomAll 中的 room_id 需要进行填充
+    - UpdateObject: Target RoomAll 中的 room_id 需要进行填充
+6. 拷贝后续UpdateObject包，时间戳为直播数据记录的时间戳。
+  - UpdateObject: Target RoomAll 中的 room_id 需要进行填充
+  - **尝试更新 initDataFrames 中的 UpdateObject**
+7. 忽略直播数据中的Pong包，**以及非UpdateObject包**
+
+  **后续分片**：
+
+  注意第四步与第五步的步骤顺序不能替换
+
+  1. 我们需要计算离 上一个分片 `lastInitTimestamp + 10秒` 最近(≥)的UpdateObject的时间戳作为当前分片的初始化时间戳，记为 `currentInitTimestamp`。
+  2. 创建 SegmentStartedAt，时间戳为 `lastInitTimestamp + 10秒`，值为 `lastInitTimestamp + 10秒`。
+  3. 拷贝 Data-Room，时间戳为 `currentInitTimestamp`。
+  4. 拷贝 **initDataFrames** 的 DataFrames(InstantiateObject|UpdateObject)，时间戳为 `currentInitTimestamp`。
+    - 注意时间戳为 `currentInitTimestamp`
+    - 去除Data-Room DataFrame
+    - InstantiateObject: Target 变为 CurrentPlayer
+    - UpdateObject: Target 变为 CurrentPlayer
+  5. 创建 CacheEnded，时间戳为 `currentInitTimestamp`，值为 `true`。
+  6. 拷贝后续UpdateObject包，时间戳为直播数据记录的时间戳。
+    - UpdateObject: Target RoomAll 中的 room_id 需要进行填充
+    - 初始化数据后的第一个 UpdateObject DataFrames的时间戳就就是 `currentInitTimestamp`。
+    - **尝试更新 initDataFrames 中的 UpdateObject**
+  7. 忽略直播数据中的Pong包，**以及非UpdateObject包**
+  8. 重复此操作
+
+![具体转换步骤状态机](/static/images/blog/acgn/linklike/motion-capture-als/statemachine.drawio.png)
+
+[代码在此处](https://github.com/ChocoLZS/linkura-cli/blob/c5f15d2d005c7ddf3ba93cb58a9774d295e59b86/crates/packet/src/als/converter.rs#L351)
 
 ## 其它问题
 
-关于时间戳记录其实是闪光藤岛慈大佬告诉我需要添加的。具体commit为 [3a1f9416](https://github.com/ChocoLZS/linkura-cli/pull/1/commits/3a1f0416edad99f050a37568eed3e94f66e056eb)。
+- 关于时间戳记录其实是闪光藤岛慈大佬告诉我需要添加的。具体commit为 [3a1f9416](https://github.com/ChocoLZS/linkura-cli/pull/1/commits/3a1f0416edad99f050a37568eed3e94f66e056eb)。由于直播获取数据的开发的时间比此commit要早，所以之前有几次的动捕数据是没有时间戳的。复原起来需要更多的时间。
 
-由于直播获取数据的开发的时间比此commit要早，所以之前有几次的动捕数据是没有时间戳的。复原起来需要更多的时间。
+- 本分析没有经过充分的测试，可能存在问题。但能以98%的表现工作了，故作分享。
