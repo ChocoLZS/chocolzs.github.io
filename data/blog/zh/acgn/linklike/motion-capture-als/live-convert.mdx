@@ -4,13 +4,13 @@ series:
   order: 3
   title: 'Link！Like！-动捕数据-als'
 date: '2025-08-07'
-lastmod: '2025-08-07'
+lastmod: '2025-08-09'
 language: zh
 tags: ['逆向', 'linkura', 'Link!Like!', 'lovelive', 'protobuf']
 authors: ['choco']
 # images: ['/static/images/kaho-big-head.png']
 draft: false
-wip: false
+wip: true
 summary: 本文主要介绍如何将直播数据转换为回放格式的逻辑。
 ---
 
@@ -21,6 +21,9 @@ summary: 本文主要介绍如何将直播数据转换为回放格式的逻辑�
 1. 初始化分片转换。
 2. 后续分片转换。
 3. m3u8文件的构造。
+
+<details>
+<summary>8月8日 成功率75%的构造方法</summary>
 
 ## 分片初始化数据
 
@@ -96,6 +99,259 @@ SegmentStartedAt、Data-Room、CacheEnded、DataFrames 的时间戳都是一致�
 #EXT-X-ENDLIST
 
 ```
+
+</details>
+
+## 遇到的问题
+
+8月8日，在上述构造的方法以后，发现部分回放能够正常播放，部分回放无法正常播放。成功率基本可以算是75%。
+
+于是接下来要尝试分析原因：
+
+结果发现，官方提供的每个回放初始化分片中，DataFrames(InstantiateObject|UpdateObject) 中的 UpdateObject 有好几个DataFrame是不一致的
+
+<details>
+<summary>分片1和分片2对比</summary>
+```
+  ✅ Frame 1 matches (digest: ca7877b0921dc6942951b09e11a29cccc2fed59b4effec17c66663c0d8d33873)
+  ✅ Frame 2 matches (digest: 7a5f7f55f38c89c1d228194bc06c61fc865d8546af1de910b63c2f3784d30284)
+  ✅ Frame 3 matches (digest: 0658340d6cd73cd8c6bb4c69ab4b5ab3b138efc7d13efce37688734a0bbe7c1e)
+  ✅ Frame 4 matches (digest: efd9b5f2c27b81edda6bc88a3a0b85152b530cc6bf250e8b03d5a40171f61c97)
+  ✅ Frame 5 matches (digest: a3ce4d22e6b0481cff2c3a8f532bd5be1524257a378799865cb44d8791eb4c30)
+  ✅ Frame 6 matches (digest: 0a3d6b2650ce8705c6713c22e1d2849770fb16ae52fd0204d18c8c3e53afacf5)
+  ✅ Frame 7 matches (digest: 1c150f550af7d28456e00b5de014bdb551cc32ba1a089209c339d0326d77540e)
+  ✅ Frame 8 matches (digest: 15bcf05c797a89b76c555dfcdb7fc44ac85b68bbbe8cf5167c4aec202bb7e70a)
+  ✅ Frame 9 matches (digest: 3653e9027c92dbc5a9a450e8a59fcf8b3845f6bc25ac0995d1c68ac01ae479c2)
+  ✅ Frame 10 matches (digest: 631d1ee226e123a8d85f057646eaba4e0e1ea0776bebb737106f831f8e59688d)
+  ✅ Frame 11 matches (digest: 2ba33f8f0b448f9c86ae91ba90d299551c8c7ee7c6e51dc3a8b6c39a67d51cf6)
+  ✅ Frame 12 matches (digest: 6c80bfc8e9aecaa476ada9799147808ae37aca04bd761f5d0be17f6da62c9369)
+  ✅ Frame 13 matches (digest: f285b9f4e60964cdf2332e9dfe1f4b6a70d798c1e98ec2e28375a674347b9d17)
+  ✅ Frame 14 matches (digest: 7151f2c18287141fb236f086c7a389bcb112c71a83915afc6a196bcf29836efe)
+  ✅ Frame 15 matches (digest: 295a11db0342355b3a7e98f3a1a09c361bebdc1f255ecf7dcd3e10bac48d19f6)
+  ✅ Frame 16 matches (digest: ae10a2bc724a3296629eb2624fbaea2f2750be7a1551831e38d193add1ad003a)
+  ✅ Frame 17 matches (digest: a0a48db3394a3405304c69e599d2bc7a41ddc5d83f75b888a8277d0a65d588f5)
+  ✅ Frame 18 matches (digest: 4c036541594e95c5b6c7e0365d896132a6a5491e83ff64a27be75833e7b9168f)
+  ✅ Frame 19 matches (digest: 5d8126e5055981394656499a4d4ad9fbe97f532372408c39ae92bdf4cadc9296)
+  ✅ Frame 20 matches (digest: 21c5cf19ffbc14579c075b66e79cb77a04b0a492ca394719fd932ab5704c557f)
+  ✅ Frame 21 matches (digest: 5fca1938d97bc3dc30c2701f8cd95be76b4a90c6594174fb516232abfb139ecb)
+  ✅ Frame 22 matches (digest: fd7117861449de141774ae778893639338fa523dca02e8e1898c86a53df3f41c)
+  ✅ Frame 23 matches (digest: c1a39b3ec38c87d737647f93f44db52b105fb6ba170d74283f2e4897aec83b13)
+  ✅ Frame 24 matches (digest: cebeefc58d18097e3e94489b6b27d37e843ad5c2592b01490a3593bbae35f6ea)
+  ✅ Frame 25 matches (digest: 3474d1dd46eec3883652f27bee99c743b129b9e5dcd3c9bf508d7868d6cbfd7a)
+  ✅ Frame 26 matches (digest: ff6beb62163235ac28667e8f38431ec395ba4b563e81fb901a7e568081dacd91)
+  ✅ Frame 27 matches (digest: d6a6334c489a51ab95c96a2f8ece5a807924cb99cc51bfdb3a7b5044a6896232)
+  ✅ Frame 28 matches (digest: be5176ad9df73dfa83a2a8542045b7f2872143f914631083f452f28dddf935fa)
+  ✅ Frame 29 matches (digest: 4173a4ead5fd722a72d2ca9a10f19005e9c02f86e2f7441b8e77badf69b4d3ca)
+  ✅ Frame 30 matches (digest: 9629c3e5b5b53f7ed6b8ef66ffa9a12523912674ba63ee508023eedfd374d59c)
+  ✅ Frame 31 matches (digest: d08b01731ece9dabf97ddb39fe361bacc5d4b5fd29515fe46d6058751a204929)
+  ✅ Frame 32 matches (digest: 4ff2b4f7239f1ae7ddd97756940db560f31c3b27968f55b4dba247550387f6c7)
+  ✅ Frame 33 matches (digest: 5db32a4782ac38875152952db50c355437a3ca147a518a64e780a6ade7233b11)
+  ✅ Frame 34 matches (digest: b62e4b4ba78550d7b5962574b8a48ef7179f2249a6df4005316b816e9bfa15c7)
+  ✅ Frame 35 matches (digest: 8c30010603759111cd61b747f878e1a1e2d92bc847ffea4f6759c1d64b7c7f94)
+  ✅ Frame 36 matches (digest: 82a9b0127701516cf0c9627186ff23d407455eed4ea7a4d7e4766dac6709d88d)
+  ✅ Frame 37 matches (digest: 6a617dcc54ae9229d41e5954984133aacb90cdc853c74e833efcb5883429ce27)
+  ✅ Frame 38 matches (digest: c420da2d46f8adf5751508a7b80f204ebd2f94b423b5adaeb65f46020cd9cdf5)
+  ✅ Frame 39 matches (digest: 4327d3466d3f7800bd90ae29dcb6e48112764b834d15d54b46f32e69083fff99)
+  ✅ Frame 40 matches (digest: 68b3942c379e5da83dfefcb4c83fbe9fc715dd2bc0d6423001331417a168d5ef)
+  ✅ Frame 41 matches (digest: 21caae5347e0bcdf10324b70707492dcc5f5e12f8ae3e78d4d82539ccdd06228)
+  ✅ Frame 42 matches (digest: dedb8ea4382dda0d4226992d53649af9c828d98f0f1ca74d5a0f1ae5ec8b4ce9)
+  ✅ Frame 43 matches (digest: d8dfacae8f9381f4628b1329ca4b86f729f9bc577614ec09f72addbe47186897)
+  ✅ Frame 44 matches (digest: abe7768f4e6c73b3815b49f753f2c5ff65bbe83553872b295d3aa0be559d91ce)
+  ✅ Frame 45 matches (digest: fb75584f4c923c342d11ca50e935d2259e20f051e2282fa05e5bc8b0bbe7e91e)
+  ✅ Frame 46 matches (digest: 27ac39b19b41b4ee39ea751e187a9cd154a356f642f1bf62d931be5676cab915)
+  ✅ Frame 47 matches (digest: 31919616f8eebfb7ac1d790054449230c49a2c8ca6691463db108dabddb262d7)
+  ✅ Frame 48 matches (digest: 3877b074403d40e9001f84032f50874c3146c4c6be3ff03f173d5be1d8bf47f3)
+  ✅ Frame 49 matches (digest: 6fb75972fbc40044a1c9cb7e8dc8b83fd319e8acc00b4244fd4ecb9befb976ae)
+  ✅ Frame 50 matches (digest: 905b2755fa2fb66559dd6878c166ab4970d6d5642323a0752ce59f6ef770e80c)
+  ✅ Frame 51 matches (digest: 92178658646b60b936e06537f439651844b7821240f82cd25b736def848cd522)
+  ✅ Frame 52 matches (digest: 263ab6fddbffbab67b8a6a2c582f4bb7254368e6de8b99417750a83d87561458)
+  ✅ Frame 53 matches (digest: 6aaeb930278c8eba73421aaba5b212612eade5f19f53a5e0bbb7681efd6390db)
+  ✅ Frame 54 matches (digest: c4c8fc01a9aeb381191f8cbff1b1df0dc720df19b262b2641f8583d101626a53)
+  ✅ Frame 55 matches (digest: 94ab1cadd35ebd2063de73ea2475ec017a32dc9312eca53006b985ef37959ac7)
+  ❌ Frame 56 has no match (digest: bc21c53773a3d174a46d127c20cf91524083c31e1fec3dae7b320da32d2e242b)
+  ✅ Frame 57 matches (digest: 34df73528b495170e8d85ca150864f2b2859fd775b31b821bc78273685dff426)
+  ❌ Frame 58 has no match (digest: 51efc27558c30cdc9831d11d839735e81d30e23496daea1e59d0471ba66e5034)
+  ✅ Frame 59 matches (digest: ffa026b9c1c9feb34b8ecd0069cd1693fb66ef0f7fecfe4bde06e3fb9f83909b)
+  ✅ Frame 60 matches (digest: 6c6f4ccf30758eae674772b7039f9e8c6dc941a28e3762181847a9a1a26415c2)
+  ✅ Frame 61 matches (digest: a592f3c1ad040fe5ec07038c980ecce52e2a7e9bd13c1fbc1867ac80213dd1b3)
+  ✅ Frame 62 matches (digest: 87b02b8bfbfe9883025432d812e9767056b86c58513bcfe1d9ba46c0eba000e9)
+  ✅ Frame 63 matches (digest: 7972f0100679bef1b20752c2be61351fe46de2f502fe7bd011625e44344a8af6)
+  ✅ Frame 64 matches (digest: 257a49b00b0508e8956d8b4f9df085ae1a704f8ee3bc7dbf4082fa90dec90f15)
+  ✅ Frame 65 matches (digest: b755d1625b12462b61349d4bcab34b173f84d633fd22269b6f799eefa43bbc94)
+  ✅ Frame 66 matches (digest: 753b3b375200dce9e6e56750e5ea0d4610aa1eff39fcb30e66b222e1a77dfdda)
+  ✅ Frame 67 matches (digest: df7f053a3e4aefaafcf3a53d192f30f1195d2cb803a28491cf6c319cda70cc20)
+  ✅ Frame 68 matches (digest: 2c726bf7a2d2323553286948f4e2b3d65ed73e0847ba4e9317c621a79ac5a1d3)
+  ✅ Frame 69 matches (digest: f0cfb13be2b5052bb8be5e268e1185c56522bb5b50bc95dec598bb2a0f415045)
+  ✅ Frame 70 matches (digest: 050bb60d49d6eb50f8a828dc7f21a9d85f725ac12c4fa1ae1b612d54a90c215c)
+  ✅ Frame 71 matches (digest: 802410a90786188a0c1dce2e915161e0e2650926d85c438b510ff9583c7a4624)
+  ❌ Frame 72 has no match (digest: 3c058014ff5b9789b525adf3d5175a1518b2042abcfd2751e02e1ae9db0c945a)
+  ✅ Frame 73 matches (digest: be7382d1a756a0ecb7314699e10c6f8bad833cf8db0a05db036aa638b1841e36)
+  ✅ Frame 74 matches (digest: c01d1d444a2f08a58ce3cfab0f4e765377344a9333092d166c653d8e6027379f)
+  ✅ Frame 75 matches (digest: 9b7f37daeefbf3f3ee151275fef29174bc0b88878c9dfff3f540e8d867fe8f1f)
+  ✅ Frame 76 matches (digest: f4c21e9eb4f84b2fae142310805b3b0d968e8c351e094304ed3a87d6f30da011)
+  ✅ Frame 77 matches (digest: 9f65064a027a53551b91414250906070121d3836f08622ac00922e035be3b7a8)
+  ✅ Frame 78 matches (digest: efe5ddfd74be7bcd27ffe14d1eb47f0f8a54f1d51b053f031282754b16f7cfd3)
+  ❌ Frame 79 has no match (digest: f66e81e76ba9654285dae75318e7eb307d1fb0f28e309ec14cb6ae42b9ad915f)
+  ✅ Frame 80 matches (digest: 8adfd41c45341df9f0cb4a45b319f8a52c9fdd7002539af517dfb90729a99382)
+  ❌ Frame 81 has no match (digest: 79f383d987eb69f2a870ebaca46d337521ad39387b0aba4cc5d4122793328d0c)
+  ✅ Frame 82 matches (digest: 3bd7ab3b43be60dfd8a64bbbb1831ee8f146e334ff82aa368833d37bbfddd277)
+  ✅ Frame 83 matches (digest: 1945b9e4af9b88bf3e509f51459ce4d5beed526a7baee8573a6690c651078511)
+  ✅ Frame 84 matches (digest: c2518be219957958eccaf2be763c9c6bb6bfec55c07bf389521904580ef8b4c1)
+  ❌ Frame 85 has no match (digest: ee147e244651f0926a4b3c77ba3e6ed54b8086ce7b8e50b800fa69711d25cf86)
+  ✅ Frame 86 matches (digest: 58b1714ec3c68d875462006223993781f9c8782c19cf33cbf71f3a2aa1a28ef1)
+  ✅ Frame 87 matches (digest: 283be947f92bcb5fc4e3359d7b5e9765df7aa5066a7e3f6b897974b59a937463)
+  ✅ Frame 88 matches (digest: cda367cb5cf34b0fd7b3675f49567836b451c5fbb8c7ce1af94890c3c907fc05)
+  ❌ Frame 89 has no match (digest: d9440e900d8cd299090e651ddbd90d0d0dafb8cf549c629ac9e635390dbec880)
+  ❌ Frame 90 has no match (digest: 235561d3d1be79914b5cab7dc54c8e15603953623ef9a882b1161c03151cf1b6)
+  ✅ Frame 91 matches (digest: 822e9173b3c98ae6a124ca72d9373e67895775ee154aeb81ae4cdffe7d1e2f0d)
+  ✅ Frame 92 matches (digest: 3aab2b54bc5100793cbcb5e7932dfc43e839df52453a9882bc073a6f85daba51)
+  ✅ Frame 93 matches (digest: c76cd8c5b135e033b2fb658511bbc516f8e1467750d2ec3c2cce14a0da65e7cd)
+  ✅ Frame 94 matches (digest: 855227a006ec0749ad2ae6d96426b1f529d655cb6202b55206c0568b98409897)
+  Result: 86/94 frames matched
+  Unmatched frames in File 1:
+    Frame 1: UpdateObject(object_id: 1660035171, method: 1, payload: 32 bytes)
+    Frame 2: UpdateObject(object_id: 1038343611, method: 1, payload: 550 bytes)
+    Frame 3: UpdateObject(object_id: 773906611, method: 1, payload: 32 bytes)
+    Frame 4: UpdateObject(object_id: 938385746, method: 0, payload: 16 bytes)
+    Frame 5: UpdateObject(object_id: 517539591, method: 0, payload: 354 bytes)
+    Frame 6: UpdateObject(object_id: 1075763389, method: 1, payload: 32 bytes)
+    Frame 7: UpdateObject(object_id: 1858325797, method: 1, payload: 550 bytes)
+    Frame 8: UpdateObject(object_id: 1669335288, method: 1, payload: 550 bytes)
+  Unmatched frames in File 2:
+    Frame 1: UpdateObject(object_id: 773906611, method: 1, payload: 32 bytes)
+    Frame 2: UpdateObject(object_id: 938385746, method: 0, payload: 16 bytes)
+    Frame 3: UpdateObject(object_id: 517539591, method: 0, payload: 391 bytes)
+    Frame 4: UpdateObject(object_id: 1075763389, method: 1, payload: 32 bytes)
+    Frame 5: UpdateObject(object_id: 1858325797, method: 1, payload: 550 bytes)
+    Frame 6: UpdateObject(object_id: 1669335288, method: 1, payload: 550 bytes)
+    Frame 7: UpdateObject(object_id: 1660035171, method: 1, payload: 32 bytes)
+    Frame 8: UpdateObject(object_id: 1038343611, method: 1, payload: 550 bytes)
+```
+</details>
+
+<details>
+<summary>分片2和分片3对比</summary>
+```
+  ...
+  Result: 86/94 frames matched
+  Unmatched frames in File 1:
+    Frame 1: UpdateObject(object_id: 773906611, method: 1, payload: 32 bytes)
+    Frame 2: UpdateObject(object_id: 938385746, method: 0, payload: 16 bytes)
+    Frame 3: UpdateObject(object_id: 517539591, method: 0, payload: 391 bytes)
+    Frame 4: UpdateObject(object_id: 1075763389, method: 1, payload: 32 bytes)
+    Frame 5: UpdateObject(object_id: 1858325797, method: 1, payload: 550 bytes)
+    Frame 6: UpdateObject(object_id: 1669335288, method: 1, payload: 550 bytes)
+    Frame 7: UpdateObject(object_id: 1660035171, method: 1, payload: 32 bytes)
+    Frame 8: UpdateObject(object_id: 1038343611, method: 1, payload: 550 bytes)
+  Unmatched frames in File 2:
+    Frame 1: UpdateObject(object_id: 773906611, method: 1, payload: 32 bytes)
+    Frame 2: UpdateObject(object_id: 938385746, method: 0, payload: 16 bytes)
+    Frame 3: UpdateObject(object_id: 517539591, method: 0, payload: 360 bytes)
+    Frame 4: UpdateObject(object_id: 1075763389, method: 1, payload: 32 bytes)
+    Frame 5: UpdateObject(object_id: 1858325797, method: 1, payload: 550 bytes)
+    Frame 6: UpdateObject(object_id: 1669335288, method: 1, payload: 550 bytes)
+    Frame 7: UpdateObject(object_id: 1660035171, method: 1, payload: 32 bytes)
+    Frame 8: UpdateObject(object_id: 1038343611, method: 1, payload: 550 bytes)
+```
+</details>
+
+<details>
+<summary>分片3和分片4对比</summary>
+```
+  ...
+  Result: 86/94 frames matched
+  Unmatched frames in File 1:
+    Frame 1: UpdateObject(object_id: 773906611, method: 1, payload: 32 bytes)
+    Frame 2: UpdateObject(object_id: 938385746, method: 0, payload: 16 bytes)
+    Frame 3: UpdateObject(object_id: 517539591, method: 0, payload: 360 bytes)
+    Frame 4: UpdateObject(object_id: 1075763389, method: 1, payload: 32 bytes)
+    Frame 5: UpdateObject(object_id: 1858325797, method: 1, payload: 550 bytes)
+    Frame 6: UpdateObject(object_id: 1669335288, method: 1, payload: 550 bytes)
+    Frame 7: UpdateObject(object_id: 1660035171, method: 1, payload: 32 bytes)
+    Frame 8: UpdateObject(object_id: 1038343611, method: 1, payload: 550 bytes)
+  Unmatched frames in File 2:
+    Frame 1: UpdateObject(object_id: 773906611, method: 1, payload: 32 bytes)
+    Frame 2: UpdateObject(object_id: 938385746, method: 0, payload: 16 bytes)
+    Frame 3: UpdateObject(object_id: 517539591, method: 0, payload: 505 bytes)
+    Frame 4: UpdateObject(object_id: 1075763389, method: 1, payload: 32 bytes)
+    Frame 5: UpdateObject(object_id: 1858325797, method: 1, payload: 550 bytes)
+    Frame 6: UpdateObject(object_id: 1669335288, method: 1, payload: 550 bytes)
+    Frame 7: UpdateObject(object_id: 1660035171, method: 1, payload: 32 bytes)
+    Frame 8: UpdateObject(object_id: 1038343611, method: 1, payload: 550 bytes)
+```
+</details>
+
+<details>
+<summary>分片232和分片233对比</summary>
+```
+  Result: 86/94 frames matched
+  Unmatched frames in File 1:
+    Frame 1: UpdateObject(object_id: 1669335288, method: 1, payload: 550 bytes)
+    Frame 2: UpdateObject(object_id: 1660035171, method: 1, payload: 32 bytes)
+    Frame 3: UpdateObject(object_id: 1038343611, method: 1, payload: 550 bytes)
+    Frame 4: UpdateObject(object_id: 773906611, method: 1, payload: 32 bytes)
+    Frame 5: UpdateObject(object_id: 938385746, method: 0, payload: 16 bytes)
+    Frame 6: UpdateObject(object_id: 517539591, method: 0, payload: 355 bytes)
+    Frame 7: UpdateObject(object_id: 1075763389, method: 1, payload: 32 bytes)
+    Frame 8: UpdateObject(object_id: 1858325797, method: 1, payload: 550 bytes)
+  Unmatched frames in File 2:
+    Frame 1: UpdateObject(object_id: 773906611, method: 1, payload: 32 bytes)
+    Frame 2: UpdateObject(object_id: 938385746, method: 0, payload: 16 bytes)
+    Frame 3: UpdateObject(object_id: 517539591, method: 0, payload: 333 bytes)
+    Frame 4: UpdateObject(object_id: 1075763389, method: 1, payload: 32 bytes)
+    Frame 5: UpdateObject(object_id: 1858325797, method: 1, payload: 550 bytes)
+    Frame 6: UpdateObject(object_id: 1669335288, method: 1, payload: 550 bytes)
+    Frame 7: UpdateObject(object_id: 1660035171, method: 1, payload: 32 bytes)
+    Frame 8: UpdateObject(object_id: 1038343611, method: 1, payload: 550 bytes)
+```
+</details>
+
+<details>
+<summary>分片1和分片233对比</summary>
+```
+  ...
+  Result: 76/94 frames matched
+  Unmatched frames in File 1:
+    Frame 1: UpdateObject(object_id: 1660035171, method: 1, payload: 32 bytes)
+    Frame 2: UpdateObject(object_id: 1038343611, method: 1, payload: 550 bytes)
+    Frame 3: UpdateObject(object_id: 843624111, method: 1, payload: 24 bytes)
+    Frame 4: UpdateObject(object_id: 1122428492, method: 1, payload: 24 bytes)
+    Frame 5: UpdateObject(object_id: 1215359862, method: 1, payload: 16 bytes)
+    Frame 6: UpdateObject(object_id: 16342169, method: 1, payload: 16 bytes)
+    Frame 7: UpdateObject(object_id: 179091227, method: 1, payload: 24 bytes)
+    Frame 8: UpdateObject(object_id: 1067207633, method: 1, payload: 16 bytes)
+    Frame 9: UpdateObject(object_id: 773906611, method: 1, payload: 32 bytes)
+    Frame 10: UpdateObject(object_id: 1933718666, method: 1, payload: 16 bytes)
+    Frame 11: UpdateObject(object_id: 1584955615, method: 1, payload: 16 bytes)
+    Frame 12: UpdateObject(object_id: 1129292208, method: 1, payload: 16 bytes)
+    Frame 13: UpdateObject(object_id: 938385746, method: 0, payload: 16 bytes)
+    Frame 14: UpdateObject(object_id: 517539591, method: 0, payload: 354 bytes)
+    Frame 15: UpdateObject(object_id: 1075763389, method: 1, payload: 32 bytes)
+    Frame 16: UpdateObject(object_id: 749893685, method: 0, payload: 47 bytes)
+    Frame 17: UpdateObject(object_id: 1858325797, method: 1, payload: 550 bytes)
+    Frame 18: UpdateObject(object_id: 1669335288, method: 1, payload: 550 bytes)
+  Unmatched frames in File 2:
+    Frame 1: UpdateObject(object_id: 773906611, method: 1, payload: 32 bytes)
+    Frame 2: UpdateObject(object_id: 1933718666, method: 1, payload: 16 bytes)
+    Frame 3: UpdateObject(object_id: 1584955615, method: 1, payload: 16 bytes)
+    Frame 4: UpdateObject(object_id: 1129292208, method: 1, payload: 16 bytes)
+    Frame 5: UpdateObject(object_id: 938385746, method: 0, payload: 16 bytes)
+    Frame 6: UpdateObject(object_id: 517539591, method: 0, payload: 333 bytes)
+    Frame 7: UpdateObject(object_id: 1075763389, method: 1, payload: 32 bytes)
+    Frame 8: UpdateObject(object_id: 749893685, method: 0, payload: 47 bytes)
+    Frame 9: UpdateObject(object_id: 1858325797, method: 1, payload: 550 bytes)
+    Frame 10: UpdateObject(object_id: 1669335288, method: 1, payload: 550 bytes)
+    Frame 11: UpdateObject(object_id: 1660035171, method: 1, payload: 32 bytes)
+    Frame 12: UpdateObject(object_id: 1038343611, method: 1, payload: 550 bytes)
+    Frame 13: UpdateObject(object_id: 843624111, method: 1, payload: 24 bytes)
+    Frame 14: UpdateObject(object_id: 1122428492, method: 1, payload: 24 bytes)
+    Frame 15: UpdateObject(object_id: 1215359862, method: 1, payload: 16 bytes)
+    Frame 16: UpdateObject(object_id: 16342169, method: 1, payload: 16 bytes)
+    Frame 17: UpdateObject(object_id: 179091227, method: 1, payload: 24 bytes)
+    Frame 18: UpdateObject(object_id: 1067207633, method: 1, payload: 16 bytes)
+```
+</details>
+
 
 ## 其它问题
 
