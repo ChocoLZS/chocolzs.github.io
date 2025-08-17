@@ -21,7 +21,7 @@ interface HomeProps {
   params: { locale: LocaleTypes }
 }
 
-const MAX_DISPLAY = 5
+const MAX_DISPLAY = 12
 
 export default async function HomeLayout({ posts, params: { locale } }: HomeProps) {
   const { t } = await createTranslation(locale, 'home')

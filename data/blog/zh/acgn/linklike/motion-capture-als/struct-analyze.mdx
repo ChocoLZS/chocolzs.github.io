@@ -4,12 +4,13 @@ series:
   order: 2
   title: 'Link！Like！-动捕数据-als'
 date: '2025-08-07'
-lastmod: '2025-08-09'
+lastmod: '2025-08-17'
 language: zh
 tags: ['逆向', 'linkura', 'Link!Like!', 'lovelive', 'protobuf', '手游', '二次元', 'ACGN']
 authors: ['choco']
 draft: false
 wip: false
+featured: true
 summary: 这篇文章主要是总结林库拉（Linkura）直播/回放动捕数据传输的结构。
 ---
 
@@ -340,7 +341,7 @@ struct Packet {
 
 ```c
 struct TimestampPacket {
-  uint8_t length;
+  uint16_t length;
   uint64_t microseconds;
 }
 ```

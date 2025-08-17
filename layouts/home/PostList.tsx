@@ -29,7 +29,7 @@ const PostList: React.FC<PostListProps> = ({ posts, locale, t, maxDisplay }) => 
   return (
     <ul className="divide-y divide-gray-200 dark:divide-gray-700">
       {!posts.length && <li>{t('noposts')}</li>}
-      {posts.slice(0, maxDisplay).map((post) => {
+      {posts.slice(0, maxDisplay).filter((post) => !post.draft && !post.wip).map((post) => {
         const { slug, date, title, summary, tags, wip, draft } = post
         return (
           <li key={slug} className="relative overflow-hidden py-12">
