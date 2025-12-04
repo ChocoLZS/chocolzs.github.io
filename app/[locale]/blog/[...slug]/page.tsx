@@ -89,13 +89,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata 
       url: img.includes('http') ? img : siteMetadata.siteUrl + img,
     }
   })
-
+  const description = (post.summary ?? "") + post.tags.join(", ");
   return {
     title: post.title,
-    description: post.summary,
+    description: description,
     openGraph: {
       title: post.title,
-      description: post.summary,
+      description: description,
       siteName: maintitle[locale],
       locale: post.language,
       type: 'article',
@@ -108,7 +108,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata 
     twitter: {
       card: 'summary_large_image',
       title: post.title,
-      description: post.summary,
+      description: description,
       images: imageList,
     },
   }
